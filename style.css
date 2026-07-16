@@ -1362,10 +1362,10 @@ button {
         width: 100%;
     }
 
-.site-logo {
-    width: 100%;
-    max-width: 150px;
-    height: auto;
-    display: block;
-    margin: 0 auto; /* Ye logo ko beech me (center) kar dega */
+ .site-logo {
+    width: 80px !important; /* Aap isko 60px se 100px tak apni marzi se set kar sakte hain */
+    max-width: 100% !important;
+    height: auto !important;
+    display: block !important;
+    margin: 15px auto !important; /* Logo ke upar aur niche thodi space banayega */
 }

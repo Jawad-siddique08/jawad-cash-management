@@ -83,6 +83,11 @@
         pctComp2Large: document.getElementById('pct-comp2-large'),
         barComp2Small: document.getElementById('bar-comp2-small'),
         pctComp2Small: document.getElementById('pct-comp2-small'),
+const barComp1Account = document.getElementById('bar-comp1-account');
+const pctComp1Account = document.getElementById('pct-comp1-account');
+// Aur Comp 2 ke liye:
+const barComp2Account = document.getElementById('bar-comp2-account');
+const pctComp2Account = document.getElementById('pct-comp2-account');
         recentLogsContainer: document.getElementById('recent-logs-container'),
 
         // Cash Entry Table Elements
@@ -558,24 +563,37 @@
         DOM.cardAverageCash.innerText = formatPKR(averageCashPerDay);
 
         // --- 5. Generate Graphics Allocations profile percentages ---
-        const completeCashPoolSum = overallGrandOverallSum || 1; // Prevent NaN division by 0
-        const c1LPct = Math.min(100, Math.round((totals.overall.c1L / completeCashPoolSum) * 100));
-        const c1SPct = Math.min(100, Math.round((totals.overall.c1S / completeCashPoolSum) * 100));
-        const c2LPct = Math.min(100, Math.round((totals.overall.c2L / completeCashPoolSum) * 100));
-        const c2SPct = Math.min(100, Math.round((totals.overall.c2S / completeCashPoolSum) * 100));
+        // --- 5. Generate Graphics Allocations profile percentages ---
+        // Pehle Account totals nikalne honge (agar ledgerData mein comp1_account aur comp2_account exist karte hain)
+        const totalComp1Account = state.ledgerData.reduce((acc, rec) => acc + parseCleanNumber(rec.comp1_account), 0);
+        const totalComp2Account = state.ledgerData.reduce((acc, rec) => acc + parseCleanNumber(rec.comp2_account), 0);
 
-        DOM.barComp1Large.style.width = `${c1LPct}%`;
-        DOM.pctComp1Large.innerText = `${c1LPct}%`;
+        const grandTotal = totals.overall.c1L + totals.overall.c1S + totalComp1Account + totals.overall.c2L + totals.overall.c2S + totalComp2Account;
 
-        DOM.barComp1Small.style.width = `${c1SPct}%`;
-        DOM.pctComp1Small.innerText = `${c1SPct}%`;
+        if (grandTotal > 0) {
+            if (DOM.barComp1Large) DOM.barComp1Large.style.width = `${((totals.overall.c1L / grandTotal) * 100).toFixed(1)}%`;
+            if (DOM.pctComp1Large) DOM.pctComp1Large.textContent = `${((totals.overall.c1L / grandTotal) * 100).toFixed(1)}%`;
 
-        DOM.barComp2Large.style.width = `${c2LPct}%`;
-        DOM.pctComp2Large.innerText = `${c2LPct}%`;
+            if (DOM.barComp1Small) DOM.barComp1Small.style.width = `${((totals.overall.c1S / grandTotal) * 100).toFixed(1)}%`;
+            if (DOM.pctComp1Small) DOM.pctComp1Small.textContent = `${((totals.overall.c1S / grandTotal) * 100).toFixed(1)}%`;
 
-        DOM.barComp2Small.style.width = `${c2SPct}%`;
-        DOM.pctComp2Small.innerText = `${c2SPct}%`;
+            if (DOM.barComp1Account) DOM.barComp1Account.style.width = `${((totalComp1Account / grandTotal) * 100).toFixed(1)}%`;
+            if (DOM.pctComp1Account) DOM.pctComp1Account.textContent = `${((totalComp1Account / grandTotal) * 100).toFixed(1)}%`;
 
+            if (DOM.barComp2Large) DOM.barComp2Large.style.width = `${((totals.overall.c2L / grandTotal) * 100).toFixed(1)}%`;
+            if (DOM.pctComp2Large) DOM.pctComp2Large.textContent = `${((totals.overall.c2L / grandTotal) * 100).toFixed(1)}%`;
+
+            if (DOM.barComp2Small) DOM.barComp2Small.style.width = `${((totals.overall.c2S / grandTotal) * 100).toFixed(1)}%`;
+            if (DOM.pctComp2Small) DOM.pctComp2Small.textContent = `${((totals.overall.c2S / grandTotal) * 100).toFixed(1)}%`;
+
+            if (DOM.barComp2Account) DOM.barComp2Account.style.width = `${((totalComp2Account / grandTotal) * 100).toFixed(1)}%`;
+            if (DOM.pctComp2Account) DOM.pctComp2Account.textContent = `${((totalComp2Account / grandTotal) * 100).toFixed(1)}%`;
+        } else {
+            // Reset to 0 if total is empty
+            [DOM.barComp1Large, DOM.barComp1Small, DOM.barComp1Account, DOM.barComp2Large, DOM.barComp2Small, DOM.barComp2Account].forEach(b => { if(b) b.style.width = '0%'; });
+            [DOM.pctComp1Large, DOM.pctComp1Small, DOM.pctComp1Account, DOM.pctComp2Large, DOM.pctComp2Small, DOM.pctComp2Account].forEach(p => { if(p) p.textContent = '0%'; });
+        }
+        
         // --- 6. Recent Action Logs Updates ---
         updateRecentEntriesLogList();
 

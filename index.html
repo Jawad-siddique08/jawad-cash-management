@@ -125,69 +125,125 @@
 
             <section id="tab-dashboard" class="tab-panel active">
                 <div class="dashboard-grid">
-                    <div class="summary-card">
-                        <div class="card-meta">
-                            <span class="card-label">Today's Entries</span>
-                            <div class="card-icon-wrapper bg-blue-soft">
-                                <i class="fa-solid fa-list-check"></i>
-                            </div>
-                        </div>
-                        <h2 class="card-value" id="card-today-entries">0</h2>
-                        <span class="card-footer-info">Records modified today</span>
-                    </div>
+                    
+<!-- 1. Today's Entries Card -->
+    <div class="summary-card">
+        <div class="card-meta">
+            <span class="card-label">Today's Entries</span>
+            <div class="card-icon-wrapper bg-blue-soft">
+                <i class="fa-solid fa-list-check"></i>
+            </div>
+        </div>
+        <h2 class="card-value" id="card-today-entries">0</h2>
+        <span class="card-footer-info">Records modified today</span>
+    </div>
 
-                    <div class="summary-card">
-                        <div class="card-meta">
-                            <span class="card-label">Today's Cash</span>
-                            <div class="card-icon-wrapper bg-green-soft">
-                                <i class="fa-solid fa-coins"></i>
-                            </div>
-                        </div>
-                        <h2 class="card-value currency-field" id="card-today-cash">Rs. 0</h2>
-                        <span class="card-footer-info text-success">Aggregated current-date cash</span>
-                    </div>
+    <!-- 2. Large Cash Card -->
+    <div class="summary-card">
+        <div class="card-meta">
+            <span class="card-label">Large Cash</span>
+            <div class="card-icon-wrapper bg-blue-soft">
+                <i class="fa-solid fa-money-bill-wave"></i>
+            </div>
+        </div>
+        <h2 class="card-value currency-field" id="card-large-cash">Rs. 0</h2>
+        <span class="card-footer-info">Total Large Cash</span>
+    </div>
 
-                    <div class="summary-card">
-                        <div class="card-meta">
-                            <span class="card-label">Overall Cash</span>
-                            <div class="card-icon-wrapper bg-purple-soft">
-                                <i class="fa-solid fa-vault"></i>
-                            </div>
-                        </div>
-                        <h2 class="card-value currency-field" id="card-overall-cash">Rs. 0</h2>
-                        <span class="card-footer-info">Lifetime accumulated total balance</span>
-                    </div>
+    <!-- 3. Small Cash Card -->
+    <div class="summary-card">
+        <div class="card-meta">
+            <span class="card-label">Small Cash</span>
+            <div class="card-icon-wrapper bg-orange-soft">
+                <i class="fa-solid fa-coins"></i>
+            </div>
+        </div>
+        <h2 class="card-value currency-field" id="card-small-cash">Rs. 0</h2>
+        <span class="card-footer-info">Total Small Cash</span>
+    </div>
 
-                    <div class="summary-card">
-                        <div class="card-meta">
-                            <span class="card-label">Monthly Cash</span>
-                            <div class="card-icon-wrapper bg-yellow-soft">
-                                <i class="fa-solid fa-calendar-check"></i>
-                            </div>
-                        </div>
-                        <h2 class="card-value currency-field" id="card-monthly-cash">Rs. 0</h2>
-                        <span class="card-footer-info" id="card-monthly-label">Current Month</span>
-                    </div>
+    <!-- 4. Today's Total Cash Card -->
+    <div class="summary-card">
+        <div class="card-meta">
+            <span class="card-label">Today's Total Cash</span>
+            <div class="card-icon-wrapper bg-green-soft">
+                <i class="fa-solid fa-wallet"></i>
+            </div>
+        </div>
+        <h2 class="card-value currency-field" id="card-today-cash">Rs. 0</h2>
+        <span class="card-footer-info text-success">Aggregated current-date cash</span>
+    </div>
 
-                    <div class="summary-card">
-                        <div class="card-meta">
-                            <span class="card-label">Average Cash / Day</span>
-                            <div class="card-icon-wrapper bg-teal-soft">
-                                <i class="fa-solid fa-scale-balanced"></i>
-                            </div>
-                        </div>
-                        <h2 class="card-value currency-field" id="card-average-cash">Rs. 0</h2>
-                        <span class="card-footer-info">Evaluated over active journal entries</span>
-                    </div>
-                </div>
+    <!-- 5. Account Card -->
+    <div class="summary-card">
+        <div class="card-meta">
+            <span class="card-label">Account</span>
+            <div class="card-icon-wrapper bg-purple-soft">
+                <i class="fa-solid fa-university"></i>
+            </div>
+        </div>
+        <h2 class="card-value currency-field" id="card-account-cash">Rs. 0</h2>
+        <span class="card-footer-info">Bank / Digital accounts</span>
+    </div>
 
-                <div class="dashboard-split-layout">
+    <!-- 6. Total Cash with Account Card -->
+    <div class="summary-card">
+        <div class="card-meta">
+            <span class="card-label">Total Cash with Account</span>
+            <div class="card-icon-wrapper bg-teal-soft">
+                <i class="fa-solid fa-calculator"></i>
+            </div>
+        </div>
+        <h2 class="card-value currency-field" id="card-total-cash">Rs. 0</h2>
+        <span class="card-footer-info">Cash + Bank combined</span>
+    </div>
+
+    <!-- 7. Overall Cash (Purana Card - Safe) -->
+    <div class="summary-card">
+        <div class="card-meta">
+            <span class="card-label">Overall Cash</span>
+            <div class="card-icon-wrapper bg-purple-soft">
+                <i class="fa-solid fa-vault"></i>
+            </div>
+        </div>
+        <h2 class="card-value currency-field" id="card-overall-cash">Rs. 0</h2>
+        <span class="card-footer-info">Lifetime accumulated total balance</span>
+    </div>
+
+    <!-- 8. Monthly Cash (Purana Card - Safe) -->
+    <div class="summary-card">
+        <div class="card-meta">
+            <span class="card-label">Monthly Cash</span>
+            <div class="card-icon-wrapper bg-yellow-soft">
+                <i class="fa-solid fa-calendar-check"></i>
+            </div>
+        </div>
+        <h2 class="card-value currency-field" id="card-monthly-cash">Rs. 0</h2>
+        <span class="card-footer-info" id="card-monthly-label">Current Month</span>
+    </div>
+
+    <!-- 9. Average Cash / Day (Purana Card - Safe) -->
+    <div class="summary-card">
+        <div class="card-meta">
+            <span class="card-label">Average Cash / Day</span>
+            <div class="card-icon-wrapper bg-teal-soft">
+                <i class="fa-solid fa-scale-balanced"></i>
+            </div>
+        </div>
+        <h2 class="card-value currency-field" id="card-average-cash">Rs. 0</h2>
+        <span class="card-footer-info">Evaluated over active journal entries</span>
+    </div>
+
+</div>
+                                      <div class="dashboard-split-layout">
                     <div class="split-card flex-column">
                         <div class="card-header">
                             <h3><i class="fa-solid fa-chart-pie card-header-icon"></i> Cash Allocation Profile</h3>
                         </div>
                         <div class="card-body chart-container flex-center">
                             <div class="allocation-visual-container">
+                                
+                                <!-- Comp 1 (Large Cash) -->
                                 <div class="allocation-row">
                                     <span class="alloc-label">Comp 1 (Large Cash)</span>
                                     <div class="alloc-progress-wrapper">
@@ -195,6 +251,8 @@
                                     </div>
                                     <span class="alloc-pct" id="pct-comp1-large">0%</span>
                                 </div>
+
+                                <!-- Comp 1 (Small Cash) -->
                                 <div class="allocation-row">
                                     <span class="alloc-label">Comp 1 (Small Cash)</span>
                                     <div class="alloc-progress-wrapper">
@@ -202,6 +260,17 @@
                                     </div>
                                     <span class="alloc-pct" id="pct-comp1-small">0%</span>
                                 </div>
+
+                                <!-- Comp 1 (Account) -->
+                                <div class="allocation-row">
+                                    <span class="alloc-label">Comp 1 (Account)</span>
+                                    <div class="alloc-progress-wrapper">
+                                        <div class="alloc-bar bg-purple-soft" id="bar-comp1-account" style="width: 0%; background-color: #8a4af3 !important;"></div>
+                                    </div>
+                                    <span class="alloc-pct" id="pct-comp1-account">0%</span>
+                                </div>
+
+                                <!-- Comp 2 (Large Cash) -->
                                 <div class="allocation-row">
                                     <span class="alloc-label">Comp 2 (Large Cash)</span>
                                     <div class="alloc-progress-wrapper">
@@ -209,6 +278,8 @@
                                     </div>
                                     <span class="alloc-pct" id="pct-comp2-large">0%</span>
                                 </div>
+
+                                <!-- Comp 2 (Small Cash) -->
                                 <div class="allocation-row">
                                     <span class="alloc-label">Comp 2 (Small Cash)</span>
                                     <div class="alloc-progress-wrapper">
@@ -216,9 +287,19 @@
                                     </div>
                                     <span class="alloc-pct" id="pct-comp2-small">0%</span>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
+
+                                <!-- Comp 2 (Account) -->
+                                <div class="allocation-row">
+                                    <span class="alloc-label">Comp 2 (Account)</span>
+                                    <div class="alloc-progress-wrapper">
+                                        <div class="alloc-bar bg-purple-soft" id="bar-comp2-account" style="width: 0%; background-color: #a066ff !important;"></div>
+                                    </div>
+                                    <span class="alloc-pct" id="pct-comp2-account">0%</span>
+                                </div>
+
+                            </div> <!-- Closes allocation-visual-container -->
+                        </div> <!-- Closes card-body -->
+                    </div> <!-- Closes split-card -->
 
                     <div class="split-card flex-column">
                         <div class="card-header">
@@ -230,7 +311,7 @@
                             </ul>
                         </div>
                     </div>
-                </div>
+                </div> <!-- Closes dashboard-split-layout -->
             </section>
 
             <section id="tab-cash-entry" class="tab-panel">

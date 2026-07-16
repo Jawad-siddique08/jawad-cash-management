@@ -1361,4 +1361,11 @@ button {
     .flex-end button {
         width: 100%;
     }
+
+.site-logo {
+    width: 100%;
+    max-width: 150px;
+    height: auto;
+    display: block;
+    margin: 0 auto; /* Ye logo ko beech me (center) kar dega */
 }

@@ -66,14 +66,26 @@
         navTabs: document.querySelectorAll('.nav-tab'),
         panels: document.querySelectorAll('.tab-panel'),
 
-        // Dashboard Elements
+        // // Dashboard Elements
         cardTodayEntries: document.getElementById('card-today-entries'),
-        cardLargeCash: document.getElementById('card-large-cash'),
-        cardSmallCash: document.getElementById('card-small-cash'),
-        cardTodayCash: document.getElementById('card-today-cash'),
-        cardAccountCash: document.getElementById('card-account-cash'),
-        cardTotalCash: document.getElementById('card-total-cash'),
-        cardOverallCash: document.getElementById('card-overall-cash'),
+        cardComp1Large: document.getElementById('card-comp1-large'),
+        cardComp1Small: document.getElementById('card-comp1-small'),
+        cardComp1TotalCash: document.getElementById('card-comp1-total-cash'),
+        cardComp1Account: document.getElementById('card-comp1-account'),
+        cardComp1TotalWithAccount: document.getElementById('card-comp1-total-with-account'),
+        
+        cardComp2Large: document.getElementById('card-comp2-large'),
+        cardComp2Small: document.getElementById('card-comp2-small'),
+        cardComp2TotalCash: document.getElementById('card-comp2-total-cash'),
+        cardComp2Account: document.getElementById('card-comp2-account'),
+        cardComp2TotalWithAccount: document.getElementById('card-comp2-total-with-account'),
+        
+        cardTodayLarge: document.getElementById('card-today-large'),
+        cardTodaySmall: document.getElementById('card-today-small'),
+        cardTodayTotalCash: document.getElementById('card-today-total-cash'),
+        cardTodayAccount: document.getElementById('card-today-account'),
+        cardTodayTotalWithAccount: document.getElementById('card-today-total-with-account'),
+        
         cardMonthlyCash: document.getElementById('card-monthly-cash'),
         cardMonthlyLabel: document.getElementById('card-monthly-label'),
         cardAverageCash: document.getElementById('card-average-cash'),
@@ -87,10 +99,11 @@
         pctComp2Large: document.getElementById('pct-comp2-large'),
         barComp2Small: document.getElementById('bar-comp2-small'),
         pctComp2Small: document.getElementById('pct-comp2-small'),
-        barComp1Account: document.getElementById('bar-comp1-account'),
-        pctComp1Account: document.getElementById('pct-comp1-account'),
-        barComp2Account: document.getElementById('bar-comp2-account'),
-        pctComp2Account: document.getElementById('pct-comp2-account'),
+const barComp1Account = document.getElementById('bar-comp1-account');
+const pctComp1Account = document.getElementById('pct-comp1-account');
+// Aur Comp 2 ke liye:
+const barComp2Account = document.getElementById('bar-comp2-account');
+const pctComp2Account = document.getElementById('pct-comp2-account');
         recentLogsContainer: document.getElementById('recent-logs-container'),
 
         // Cash Entry Table Elements
@@ -104,10 +117,8 @@
         // Live Calculating Table Footers (TODAY)
         todayComp1Large: document.getElementById('today-comp1-large'),
         todayComp1Small: document.getElementById('today-comp1-small'),
-        todayComp1Account: document.getElementById('today-comp1-account'),
         todayComp2Large: document.getElementById('today-comp2-large'),
         todayComp2Small: document.getElementById('today-comp2-small'),
-        todayComp2Account: document.getElementById('today-comp2-account'),
         todayComp1Total: document.getElementById('today-comp1-total'),
         todayComp2Total: document.getElementById('today-comp2-total'),
         todayGrandTotal: document.getElementById('today-grand-total'),
@@ -115,10 +126,8 @@
         // Live Calculating Table Footers (OVERALL)
         overallComp1Large: document.getElementById('overall-comp1-large'),
         overallComp1Small: document.getElementById('overall-comp1-small'),
-        overallComp1Account: document.getElementById('overall-comp1-account'),
         overallComp2Large: document.getElementById('overall-comp2-large'),
         overallComp2Small: document.getElementById('overall-comp2-small'),
-        overallComp2Account: document.getElementById('overall-comp2-account'),
         overallComp1Total: document.getElementById('overall-comp1-total'),
         overallComp2Total: document.getElementById('overall-comp2-total'),
         overallGrandTotal: document.getElementById('overall-grand-total'),
@@ -236,10 +245,8 @@
                     day: resolveDayName(getFormattedDateISO()),
                     comp1_large: 250000.00,
                     comp1_small: 15000.00,
-                    comp1_account: 50000.00,
                     comp2_large: 180000.00,
                     comp2_small: 8500.00,
-                    comp2_account: 25000.00,
                     remarks: "Opening Cash Pool Initialized",
                     locked: false
                 }
@@ -335,7 +342,7 @@
         if (filteredRecords.length === 0) {
             DOM.ledgerBody.innerHTML = `
                 <tr>
-                    <td colspan="11" class="text-center text-muted" style="padding: 3rem;">
+                    <td colspan="9" class="text-center text-muted" style="padding: 3rem;">
                         <i class="fa-solid fa-folder-open fa-3x mb-3" style="display:block; opacity: 0.5;"></i>
                         No Cash Ledger Records Found matching specified criteria.
                     </td>
@@ -370,16 +377,10 @@
                     <input type="text" class="table-input cell-comp1-small text-right font-mono" value="${formatPKR(record.comp1_small)}" ${inputDisabledAttr}>
                 </td>
                 <td>
-                    <input type="text" class="table-input cell-comp1-account text-right font-mono" value="${formatPKR(record.comp1_account || 0)}" ${inputDisabledAttr}>
-                </td>
-                <td>
                     <input type="text" class="table-input cell-comp2-large text-right font-mono" value="${formatPKR(record.comp2_large)}" ${inputDisabledAttr}>
                 </td>
                 <td>
                     <input type="text" class="table-input cell-comp2-small text-right font-mono" value="${formatPKR(record.comp2_small)}" ${inputDisabledAttr}>
-                </td>
-                <td>
-                    <input type="text" class="table-input cell-comp2-account text-right font-mono" value="${formatPKR(record.comp2_account || 0)}" ${inputDisabledAttr}>
                 </td>
                 <td>
                     <input type="text" class="table-input cell-remarks" value="${record.remarks || ''}" placeholder="Enter remarks..." ${inputDisabledAttr}>
@@ -407,10 +408,8 @@
         const dateInput = rowElement.querySelector('.cell-date');
         const comp1LargeInput = rowElement.querySelector('.cell-comp1-large');
         const comp1SmallInput = rowElement.querySelector('.cell-comp1-small');
-        const comp1AccountInput = rowElement.querySelector('.cell-comp1-account');
         const comp2LargeInput = rowElement.querySelector('.cell-comp2-large');
         const comp2SmallInput = rowElement.querySelector('.cell-comp2-small');
-        const comp2AccountInput = rowElement.querySelector('.cell-comp2-account');
         const remarksInput = rowElement.querySelector('.cell-remarks');
         const deleteBtn = rowElement.querySelector('.btn-delete-row');
 
@@ -438,17 +437,11 @@
         comp1SmallInput.addEventListener('focus', formatInputOnFocus);
         comp1SmallInput.addEventListener('blur', (e) => formatInputOnBlur(e, 'comp1_small'));
 
-        comp1AccountInput.addEventListener('focus', formatInputOnFocus);
-        comp1AccountInput.addEventListener('blur', (e) => formatInputOnBlur(e, 'comp1_account'));
-
         comp2LargeInput.addEventListener('focus', formatInputOnFocus);
         comp2LargeInput.addEventListener('blur', (e) => formatInputOnBlur(e, 'comp2_large'));
 
         comp2SmallInput.addEventListener('focus', formatInputOnFocus);
         comp2SmallInput.addEventListener('blur', (e) => formatInputOnBlur(e, 'comp2_small'));
-
-        comp2AccountInput.addEventListener('focus', formatInputOnFocus);
-        comp2AccountInput.addEventListener('blur', (e) => formatInputOnBlur(e, 'comp2_account'));
 
         // Date update logic
         dateInput.addEventListener('change', (e) => {
@@ -498,8 +491,8 @@
         
         // --- 1. Aggregations Containers ---
         let totals = {
-            today: { c1L: 0, c1S: 0, c1A: 0, c2L: 0, c2S: 0, c2A: 0 },
-            overall: { c1L: 0, c1S: 0, c1A: 0, c2L: 0, c2S: 0, c2A: 0 }
+            today: { c1L: 0, c1S: 0, c2L: 0, c2S: 0 },
+            overall: { c1L: 0, c1S: 0, c2L: 0, c2S: 0 }
         };
 
         let uniqueDatesWithEntries = new Set();
@@ -507,10 +500,8 @@
         state.ledgerData.forEach(rec => {
             const c1lVal = parseCleanNumber(rec.comp1_large);
             const c1sVal = parseCleanNumber(rec.comp1_small);
-            const c1aVal = parseCleanNumber(rec.comp1_account);
             const c2lVal = parseCleanNumber(rec.comp2_large);
             const c2sVal = parseCleanNumber(rec.comp2_small);
-            const c2aVal = parseCleanNumber(rec.comp2_account);
 
             if (rec.date) {
                 uniqueDatesWithEntries.add(rec.date);
@@ -520,47 +511,39 @@
             if (rec.date === todayISO) {
                 totals.today.c1L += c1lVal;
                 totals.today.c1S += c1sVal;
-                totals.today.c1A += c1aVal;
                 totals.today.c2L += c2lVal;
                 totals.today.c2S += c2sVal;
-                totals.today.c2A += c2aVal;
             }
 
             // Lifetime tracking calculations
             totals.overall.c1L += c1lVal;
             totals.overall.c1S += c1sVal;
-            totals.overall.c1A += c1aVal;
             totals.overall.c2L += c2lVal;
             totals.overall.c2S += c2sVal;
-            totals.overall.c2A += c2aVal;
         });
 
         // Multi-level calculations
-        const todayComp1TotalSum = totals.today.c1L + totals.today.c1S + totals.today.c1A;
-        const todayComp2TotalSum = totals.today.c2L + totals.today.c2S + totals.today.c2A;
+        const todayComp1TotalSum = totals.today.c1L + totals.today.c1S;
+        const todayComp2TotalSum = totals.today.c2L + totals.today.c2S;
         const todayGrandOverallSum = todayComp1TotalSum + todayComp2TotalSum;
 
-        const overallComp1TotalSum = totals.overall.c1L + totals.overall.c1S + totals.overall.c1A;
-        const overallComp2TotalSum = totals.overall.c2L + totals.overall.c2S + totals.overall.c2A;
+        const overallComp1TotalSum = totals.overall.c1L + totals.overall.c1S;
+        const overallComp2TotalSum = totals.overall.c2L + totals.overall.c2S;
         const overallGrandOverallSum = overallComp1TotalSum + overallComp2TotalSum;
 
         // --- 2. Update Cash Entry View Table Footers ---
         DOM.todayComp1Large.innerText = formatPKR(totals.today.c1L).replace("Rs.", "");
         DOM.todayComp1Small.innerText = formatPKR(totals.today.c1S).replace("Rs.", "");
-        if (DOM.todayComp1Account) DOM.todayComp1Account.innerText = formatPKR(totals.today.c1A).replace("Rs.", "");
         DOM.todayComp2Large.innerText = formatPKR(totals.today.c2L).replace("Rs.", "");
         DOM.todayComp2Small.innerText = formatPKR(totals.today.c2S).replace("Rs.", "");
-        if (DOM.todayComp2Account) DOM.todayComp2Account.innerText = formatPKR(totals.today.c2A).replace("Rs.", "");
         DOM.todayComp1Total.innerText = formatPKR(todayComp1TotalSum);
         DOM.todayComp2Total.innerText = formatPKR(todayComp2TotalSum);
         DOM.todayGrandTotal.innerText = formatPKR(todayGrandOverallSum);
 
         DOM.overallComp1Large.innerText = formatPKR(totals.overall.c1L).replace("Rs.", "");
         DOM.overallComp1Small.innerText = formatPKR(totals.overall.c1S).replace("Rs.", "");
-        if (DOM.overallComp1Account) DOM.overallComp1Account.innerText = formatPKR(totals.overall.c1A).replace("Rs.", "");
         DOM.overallComp2Large.innerText = formatPKR(totals.overall.c2L).replace("Rs.", "");
         DOM.overallComp2Small.innerText = formatPKR(totals.overall.c2S).replace("Rs.", "");
-        if (DOM.overallComp2Account) DOM.overallComp2Account.innerText = formatPKR(totals.overall.c2A).replace("Rs.", "");
         DOM.overallComp1Total.innerText = formatPKR(overallComp1TotalSum);
         DOM.overallComp2Total.innerText = formatPKR(overallComp2TotalSum);
         DOM.overallGrandTotal.innerText = formatPKR(overallGrandOverallSum);
@@ -576,28 +559,69 @@
                 if (parts[0] === currentYearStr && parts[1] === currentMonthStr) {
                     monthlyTotalCashSum += parseCleanNumber(rec.comp1_large) +
                                            parseCleanNumber(rec.comp1_small) +
-                                           parseCleanNumber(rec.comp1_account) +
                                            parseCleanNumber(rec.comp2_large) +
-                                           parseCleanNumber(rec.comp2_small) +
-                                           parseCleanNumber(rec.comp2_account);
+                                           parseCleanNumber(rec.comp2_small);
                 }
             }
         });
 
         // --- 4. Render Dashboard Summary Card Elements ---
-        const todayRecordCount = state.ledgerData.filter(rec => rec.date === todayISO).length;
-        DOM.cardTodayEntries.innerText = todayRecordCount;
-        
-        // Update updated cards logic
-        if (DOM.cardLargeCash) DOM.cardLargeCash.innerText = formatPKR(totals.overall.c1L + totals.overall.c2L);
-        if (DOM.cardSmallCash) DOM.cardSmallCash.innerText = formatPKR(totals.overall.c1S + totals.overall.c2S);
-        if (DOM.cardAccountCash) DOM.cardAccountCash.innerText = formatPKR(totals.overall.c1A + totals.overall.c2A);
-        if (DOM.cardTotalCash) DOM.cardTotalCash.innerText = formatPKR(overallGrandOverallSum);
-        
-        DOM.cardTodayCash.innerText = formatPKR(todayGrandOverallSum);
-        DOM.cardOverallCash.innerText = formatPKR(totals.overall.c1L + totals.overall.c1S + totals.overall.c2L + totals.overall.c2S); // Overall Cash physically in Vault
-        DOM.cardMonthlyCash.innerText = formatPKR(monthlyTotalCashSum);
-        DOM.cardMonthlyLabel.innerText = `${new Date().toLocaleString('en-US', { month: 'long' })} ${currentYearStr} Total`;
+    const todayRecordCount = state.ledgerData.filter(rec => rec.date === todayISO).length;
+    DOM.cardTodayEntries.innerText = todayRecordCount;
+
+    // Naye 15 Cards Ki Custom Pure Calculation Engine
+    let oC1Large = 0, oC1Small = 0, oC1Account = 0;
+    let oC2Large = 0, oC2Small = 0, oC2Account = 0;
+    let tLarge = 0, tSmall = 0, tAccount = 0;
+
+    state.ledgerData.forEach(rec => {
+        const c1L = parseCleanNumber(rec.comp1_large || rec.comp1Large || 0);
+        const c1S = parseCleanNumber(rec.comp1_small || rec.comp1Small || 0);
+        const c1A = parseCleanNumber(rec.comp1_account || rec.comp1Account || 0);
+        const c2L = parseCleanNumber(rec.comp2_large || rec.comp2Large || 0);
+        const c2S = parseCleanNumber(rec.comp2_small || rec.comp2Small || 0);
+        const c2A = parseCleanNumber(rec.comp2_account || rec.comp2Account || 0);
+
+        // Overall Totals Build-up
+        oC1Large += c1L;
+        oC1Small += c1S;
+        oC1Account += c1A;
+        oC2Large += c2L;
+        oC2Small += c2S;
+        oC2Account += c2A;
+
+        // Today's Totals Build-up
+        if (rec.date === todayISO) {
+            tLarge += (c1L + c2L);
+            tSmall += (c1S + c2S);
+            tAccount += (c1A + c2A);
+        }
+    });
+
+    // === COMP 1 CARDS INJECTION ===
+    DOM.cardComp1Large.innerText = formatPKR(oC1Large);
+    DOM.cardComp1Small.innerText = formatPKR(oC1Small);
+    DOM.cardComp1TotalCash.innerText = formatPKR(oC1Large + oC1Small);
+    DOM.cardComp1Account.innerText = formatPKR(oC1Account);
+    DOM.cardComp1TotalWithAccount.innerText = formatPKR(oC1Large + oC1Small + oC1Account);
+
+    // === COMP 2 CARDS INJECTION ===
+    DOM.cardComp2Large.innerText = formatPKR(oC2Large);
+    DOM.cardComp2Small.innerText = formatPKR(oC2Small);
+    DOM.cardComp2TotalCash.innerText = formatPKR(oC2Large + oC2Small);
+    DOM.cardComp2Account.innerText = formatPKR(oC2Account);
+    DOM.cardComp2TotalWithAccount.innerText = formatPKR(oC2Large + oC2Small + oC2Account);
+
+    // === TODAY'S TOTAL CARDS INJECTION ===
+    DOM.cardTodayLarge.innerText = formatPKR(tLarge);
+    DOM.cardTodaySmall.innerText = formatPKR(tSmall);
+    DOM.cardTodayTotalCash.innerText = formatPKR(tLarge + tSmall);
+    DOM.cardTodayAccount.innerText = formatPKR(tAccount);
+    DOM.cardTodayTotalWithAccount.innerText = formatPKR(tLarge + tSmall + tAccount);
+
+    // === BAQI PURANE ELEMENTS DECENTLY RUNNING ===
+    DOM.cardMonthlyCash.innerText = formatPKR(monthlyTotalCashSum);
+    DOM.cardMonthlyLabel.innerText = `${new Date().toLocaleString('en-US', { month: 'long' })} Total`;
 
         // Calculate average daily balances
         const activeDaysCount = uniqueDatesWithEntries.size || 1;
@@ -605,8 +629,12 @@
         DOM.cardAverageCash.innerText = formatPKR(averageCashPerDay);
 
         // --- 5. Generate Graphics Allocations profile percentages ---
-        const grandTotal = totals.overall.c1L + totals.overall.c1S + totals.overall.c1A +
-                           totals.overall.c2L + totals.overall.c2S + totals.overall.c2A;
+        // --- 5. Generate Graphics Allocations profile percentages ---
+        // Pehle Account totals nikalne honge (agar ledgerData mein comp1_account aur comp2_account exist karte hain)
+        const totalComp1Account = state.ledgerData.reduce((acc, rec) => acc + parseCleanNumber(rec.comp1_account), 0);
+        const totalComp2Account = state.ledgerData.reduce((acc, rec) => acc + parseCleanNumber(rec.comp2_account), 0);
+
+        const grandTotal = totals.overall.c1L + totals.overall.c1S + totalComp1Account + totals.overall.c2L + totals.overall.c2S + totalComp2Account;
 
         if (grandTotal > 0) {
             if (DOM.barComp1Large) DOM.barComp1Large.style.width = `${((totals.overall.c1L / grandTotal) * 100).toFixed(1)}%`;
@@ -615,8 +643,8 @@
             if (DOM.barComp1Small) DOM.barComp1Small.style.width = `${((totals.overall.c1S / grandTotal) * 100).toFixed(1)}%`;
             if (DOM.pctComp1Small) DOM.pctComp1Small.textContent = `${((totals.overall.c1S / grandTotal) * 100).toFixed(1)}%`;
 
-            if (DOM.barComp1Account) DOM.barComp1Account.style.width = `${((totals.overall.c1A / grandTotal) * 100).toFixed(1)}%`;
-            if (DOM.pctComp1Account) DOM.pctComp1Account.textContent = `${((totals.overall.c1A / grandTotal) * 100).toFixed(1)}%`;
+            if (DOM.barComp1Account) DOM.barComp1Account.style.width = `${((totalComp1Account / grandTotal) * 100).toFixed(1)}%`;
+            if (DOM.pctComp1Account) DOM.pctComp1Account.textContent = `${((totalComp1Account / grandTotal) * 100).toFixed(1)}%`;
 
             if (DOM.barComp2Large) DOM.barComp2Large.style.width = `${((totals.overall.c2L / grandTotal) * 100).toFixed(1)}%`;
             if (DOM.pctComp2Large) DOM.pctComp2Large.textContent = `${((totals.overall.c2L / grandTotal) * 100).toFixed(1)}%`;
@@ -624,8 +652,8 @@
             if (DOM.barComp2Small) DOM.barComp2Small.style.width = `${((totals.overall.c2S / grandTotal) * 100).toFixed(1)}%`;
             if (DOM.pctComp2Small) DOM.pctComp2Small.textContent = `${((totals.overall.c2S / grandTotal) * 100).toFixed(1)}%`;
 
-            if (DOM.barComp2Account) DOM.barComp2Account.style.width = `${((totals.overall.c2A / grandTotal) * 100).toFixed(1)}%`;
-            if (DOM.pctComp2Account) DOM.pctComp2Account.textContent = `${((totals.overall.c2A / grandTotal) * 100).toFixed(1)}%`;
+            if (DOM.barComp2Account) DOM.barComp2Account.style.width = `${((totalComp2Account / grandTotal) * 100).toFixed(1)}%`;
+            if (DOM.pctComp2Account) DOM.pctComp2Account.textContent = `${((totalComp2Account / grandTotal) * 100).toFixed(1)}%`;
         } else {
             // Reset to 0 if total is empty
             [DOM.barComp1Large, DOM.barComp1Small, DOM.barComp1Account, DOM.barComp2Large, DOM.barComp2Small, DOM.barComp2Account].forEach(b => { if(b) b.style.width = '0%'; });
@@ -656,8 +684,7 @@
 
         sliced.forEach(item => {
             const li = document.createElement('li');
-            const total = parseCleanNumber(item.comp1_large) + parseCleanNumber(item.comp1_small) + parseCleanNumber(item.comp1_account) +
-                          parseCleanNumber(item.comp2_large) + parseCleanNumber(item.comp2_small) + parseCleanNumber(item.comp2_account);
+            const total = parseCleanNumber(item.comp1_large) + parseCleanNumber(item.comp1_small) + parseCleanNumber(item.comp2_large) + parseCleanNumber(item.comp2_small);
             li.innerHTML = `
                 <div>
                     <strong>${item.date}</strong> - ${item.remarks || 'No remarks recorded'}
@@ -740,8 +767,8 @@
         }
 
         matchedEntries.forEach(item => {
-            const c1Total = parseCleanNumber(item.comp1_large) + parseCleanNumber(item.comp1_small) + parseCleanNumber(item.comp1_account);
-            const c2Total = parseCleanNumber(item.comp2_large) + parseCleanNumber(item.comp2_small) + parseCleanNumber(item.comp2_account);
+            const c1Total = parseCleanNumber(item.comp1_large) + parseCleanNumber(item.comp1_small);
+            const c2Total = parseCleanNumber(item.comp2_large) + parseCleanNumber(item.comp2_small);
             const grandRowTotal = c1Total + c2Total;
 
             comp1Sum += c1Total;
@@ -903,10 +930,8 @@
             day: resolveDayName(defaultDate),
             comp1_large: 0.00,
             comp1_small: 0.00,
-            comp1_account: 0.00,
             comp2_large: 0.00,
             comp2_small: 0.00,
-            comp2_account: 0.00,
             remarks: '',
             locked: false
         };
@@ -1069,23 +1094,21 @@
         let csvContent = "data:text/csv;charset=utf-8,";
         
         // Table CSV header structure
-        csvContent += "S.No,Date,Day,Comp 1 Large Cash,Comp 1 Small Cash,Comp 1 Account,Comp 1 Sub Total,Comp 2 Large Cash,Comp 2 Small Cash,Comp 2 Account,Comp 2 Sub Total,Daily Grand Total,Remarks\r\n";
+        csvContent += "S.No,Date,Day,Comp 1 Large Cash,Comp 1 Small Cash,Comp 1 Sub Total,Comp 2 Large Cash,Comp 2 Small Cash,Comp 2 Sub Total,Daily Grand Total,Remarks\r\n";
 
         matchedEntries.forEach((item, index) => {
             const c1l = parseCleanNumber(item.comp1_large);
             const c1s = parseCleanNumber(item.comp1_small);
-            const c1a = parseCleanNumber(item.comp1_account);
-            const c1t = c1l + c1s + c1a;
+            const c1t = c1l + c1s;
 
             const c2l = parseCleanNumber(item.comp2_large);
             const c2s = parseCleanNumber(item.comp2_small);
-            const c2a = parseCleanNumber(item.comp2_account);
-            const c2t = c2l + c2s + c2a;
+            const c2t = c2l + c2s;
 
             const grand = c1t + c2t;
             const rem = (item.remarks || "").replace(/,/g, " ");
 
-            csvContent += `${index + 1},${item.date},${item.day},${c1l},${c1s},${c1a},${c1t},${c2l},${c2s},${c2a},${c2t},${grand},${rem}\r\n`;
+            csvContent += `${index + 1},${item.date},${item.day},${c1l},${c1s},${c1t},${c2l},${c2s},${c2t},${grand},${rem}\r\n`;
         });
 
         const encodedUri = encodeURI(csvContent);

@@ -3,633 +3,327 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1e3a8a">
+    <meta name="description" content="Secure Commercial Cash Management System for Jawad Cash Management">
     <title>Jawad Cash Management</title>
-    <!-- Font Awesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        /* Modern Elegant Styling Variables */
-        :root {
-            --bg-primary: #f8fafc;
-            --bg-secondary: #ffffff;
-            --text-primary: #0f172a;
-            --text-secondary: #64748b;
-            --accent-color: #3b82f6;
-            --border-color: #e2e8f0;
-            --success-color: #10b981;
-            --danger-color: #ef4444;
-            --card-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
-        }
-
-        .dark-mode {
-            --bg-primary: #0f172a;
-            --bg-secondary: #1e293b;
-            --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-            --accent-color: #3b82f6;
-            --border-color: #334155;
-            --success-color: #10b981;
-            --danger-color: #f43f5e;
-            --card-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3), 0 4px 6px -4px rgb(0 0 0 / 0.3);
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            transition: background-color 0.3s, border-color 0.3s, color 0.3s;
-        }
-
-        body {
-            background-color: var(--bg-primary);
-            color: var(--text-primary);
-            min-height: 100vh;
-        }
-
-        /* Gatekeeper CSS */
-        .gatekeeper-overlay {
-            position: fixed;
-            inset: 0;
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-        }
-
-        .gatekeeper-card {
-            background: rgba(30, 41, 59, 0.8);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 2.5rem;
-            border-radius: 20px;
-            width: 100%;
-            max-width: 420px;
-            text-align: center;
-            box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.5);
-        }
-
-        .gatekeeper-logo {
-            font-size: 3rem;
-            color: var(--accent-color);
-            margin-bottom: 1rem;
-        }
-
-        .gatekeeper-card h2 {
-            color: #ffffff;
-            margin-bottom: 0.5rem;
-            font-weight: 700;
-        }
-
-        .gatekeeper-card p {
-            color: #94a3b8;
-            margin-bottom: 1.5rem;
-            font-size: 0.9rem;
-        }
-
-        .passcode-wrapper {
-            position: relative;
-            margin-bottom: 1.5rem;
-        }
-
-        .passcode-wrapper input {
-            width: 100%;
-            padding: 1rem 1.5rem;
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            background: rgba(15, 23, 42, 0.6);
-            color: #ffffff;
-            font-size: 1.2rem;
-            letter-spacing: 0.5rem;
-            text-align: center;
-            outline: none;
-        }
-
-        .passcode-wrapper button {
-            position: absolute;
-            right: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: none;
-            border: none;
-            color: #94a3b8;
-            cursor: pointer;
-        }
-
-        .btn-primary {
-            width: 100%;
-            padding: 1rem;
-            border-radius: 12px;
-            background: var(--accent-color);
-            color: white;
-            border: none;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 1rem;
-        }
-
-        .btn-primary:hover {
-            opacity: 0.9;
-        }
-
-        .gatekeeper-error {
-            color: var(--danger-color);
-            font-size: 0.85rem;
-            margin-top: 1rem;
-        }
-
-        /* App Container */
-        .app-container {
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
-
-        header {
-            background-color: var(--bg-secondary);
-            border-bottom: 1px solid var(--border-color);
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: var(--card-shadow);
-        }
-
-        .logo-section h1 {
-            font-size: 1.4rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, #3b82f6 0%, #10b981 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .header-controls {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .badge {
-            padding: 0.5rem 1rem;
-            border-radius: 99px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .badge-viewer { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
-        .badge-admin { background: rgba(16, 185, 129, 0.1); color: #10b981; }
-
-        .btn-secondary {
-            background: var(--bg-primary);
-            border: 1px solid var(--border-color);
-            color: var(--text-primary);
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-        }
-
-        /* Main Workspace Navigation Layout */
-        .workspace-layout {
-            display: flex;
-            flex: 1;
-        }
-
-        .sidebar {
-            width: 260px;
-            background-color: var(--bg-secondary);
-            border-right: 1px solid var(--border-color);
-            padding: 2rem 1rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        .nav-tab {
-            padding: 0.8rem 1.2rem;
-            border-radius: 10px;
-            color: var(--text-secondary);
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .nav-tab.active, .nav-tab:hover {
-            background: rgba(59, 130, 246, 0.08);
-            color: var(--accent-color);
-        }
-
-        .content-area {
-            flex: 1;
-            padding: 2rem;
-            overflow-y: auto;
-        }
-
-        .tab-panel {
-            display: none;
-        }
-
-        .tab-panel.active {
-            display: block;
-        }
-
-        /* Dashboard Cards Grid */
-        .cards-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .metric-card {
-            background-color: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 1.5rem;
-            box-shadow: var(--card-shadow);
-        }
-
-        .metric-card h4 {
-            color: var(--text-secondary);
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 0.5rem;
-        }
-
-        .metric-card .value {
-            font-size: 1.8rem;
-            font-weight: 800;
-            font-family: 'JetBrains Mono', monospace;
-        }
-
-        /* Dashboard Visuals & Recent Activity Section */
-        .dashboard-details-container {
-            display: grid;
-            grid-template-columns: 1.5fr 1fr;
-            gap: 1.5rem;
-        }
-
-        .visual-bars-card, .recent-logs-card {
-            background-color: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 1.5rem;
-            box-shadow: var(--card-shadow);
-        }
-
-        .bar-group {
-            margin-bottom: 1.2rem;
-        }
-
-        .bar-label-container {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.85rem;
-            font-weight: 600;
-            margin-bottom: 0.4rem;
-        }
-
-        .progress-bar-bg {
-            height: 10px;
-            background: var(--border-color);
-            border-radius: 99px;
-            overflow: hidden;
-        }
-
-        .progress-bar-fill {
-            height: 100%;
-            background: var(--accent-color);
-            width: 0%;
-            transition: width 0.8s ease-out;
-        }
-
-        /* Table & Filters Styling */
-        .table-filter-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background-color: var(--bg-secondary);
-            padding: 1rem;
-            border-radius: 12px;
-            border: 1px solid var(--border-color);
-            margin-bottom: 1.5rem;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
-
-        .filter-group {
-            display: flex;
-            gap: 0.5rem;
-            align-items: center;
-        }
-
-        .filter-input {
-            padding: 0.5rem;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            outline: none;
-        }
-
-        .table-wrapper {
-            background-color: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            overflow-x: auto;
-            box-shadow: var(--card-shadow);
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-        }
-
-        th {
-            background-color: var(--bg-primary);
-            padding: 1rem;
-            font-weight: 700;
-            color: var(--text-secondary);
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            border-bottom: 2px solid var(--border-color);
-        }
-
-        td {
-            padding: 0.8rem 1rem;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .table-input {
-            width: 100%;
-            border: 1px solid transparent;
-            background: transparent;
-            color: var(--text-primary);
-            padding: 0.4rem;
-            border-radius: 6px;
-            outline: none;
-        }
-
-        .table-input:focus {
-            border-color: var(--accent-color);
-            background: var(--bg-primary);
-        }
-
-        .text-right { text-align: right; }
-        .text-center { text-align: center; }
-        .font-mono { font-family: 'JetBrains Mono', monospace; }
-
-        .row-locked {
-            background-color: rgba(0,0,0,0.02) !important;
-            opacity: 0.8;
-        }
-
-        /* Footer System Styling */
-        tfoot tr {
-            background-color: var(--bg-primary);
-            font-weight: 700;
-        }
-
-        /* Modals style */
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(4px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10000;
-        }
-
-        .modal-card {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 20px;
-            padding: 2rem;
-            width: 100%;
-            max-width: 450px;
-            box-shadow: var(--card-shadow);
-        }
-
-        .modal-buttons {
-            display: flex;
-            gap: 1rem;
-            margin-top: 1.5rem;
-        }
-
-        .hide { display: none !important; }
-
-        /* Actions styling */
-        .btn-action {
-            padding: 0.4rem 0.8rem;
-            border-radius: 6px;
-            border: none;
-            cursor: pointer;
-            font-size: 0.9rem;
-        }
-        .btn-danger { background-color: var(--danger-color); color: white; }
-
-        /* Print Mode styles */
-        @media print {
-            .sidebar, header, .table-filter-bar, .modal-overlay, .edit-elements-only {
-                display: none !important;
-            }
-            .content-area {
-                padding: 0;
-            }
-        }
-    </style>
+    
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="assets/icons/icon-192x192.png">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
+    <link rel="stylesheet" href="style.css">
 </head>
 <body class="light-mode">
 
-    <!-- ==========================================
-         SECURITY ACCESS PORTAL (GATEKEEPER)
-         ========================================== -->
     <div id="gatekeeper-overlay" class="gatekeeper-overlay">
         <div class="gatekeeper-card">
-            <div class="gatekeeper-logo">
-                <i class="fa-solid fa-vault"></i>
+            <div class="gatekeeper-header">
+                <div class="app-logo-container">
+                    <i class="fa-solid fa-vault fa-3x brand-primary-color"></i>
+                </div>
+<img src="images/logo.jpeg" alt="Logo" class="site-logo">
+                <h2>Jawad Cash Management</h2>
+                <p>Secure Enterprise Portal</p>
             </div>
-            <h2>Secure Gateway Access</h2>
-            <p>Jawad Cash Management Secure Portal</p>
-            <div class="passcode-wrapper">
-                <input type="password" id="passcode-input" maxlength="8" placeholder="••••">
-                <button id="toggle-gatekeeper-passcode"><i class="fa-solid fa-eye-slash"></i></button>
+            
+            <div class="gatekeeper-body">
+                <div class="input-group">
+                    <label for="passcode-input">Enter Authorization Passcode</label>
+                    <div class="passcode-wrapper">
+                        <input type="password" id="passcode-input" maxlength="8" placeholder="••••" autocomplete="off" autofocus>
+                        <button type="button" id="toggle-gatekeeper-passcode" class="btn-icon">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
+                    <span id="gatekeeper-error" class="error-text hide">Invalid passcode. Please try again.</span>
+                </div>
+                
+                <button type="button" id="btn-authenticate" class="btn-primary btn-block">
+                    <i class="fa-solid fa-key"></i> Authenticate
+                </button>
             </div>
-            <button id="btn-authenticate" class="btn-primary">Authenticate Gateway</button>
-            <p id="gatekeeper-error" class="gatekeeper-error hide">Invalid authorization credential. Try again!</p>
+            
+            <div class="gatekeeper-footer">
+                <span class="badge-viewer-hint">Viewer Passcode: ****</span>
+                <span class="badge-admin-hint">Admin Passcode: ****</span>
+            </div>
         </div>
     </div>
 
-    <!-- ==========================================
-         MAIN SECURE SYSTEM CONTAINER
-         ========================================== -->
     <div id="app-container" class="app-container hide">
-        <header>
-            <div class="logo-section">
-                <h1>JAWAD CASH MANAGEMENT</h1>
+        
+        <header class="app-header">
+            <div class="header-left">
+                <div class="header-brand">
+                    <i class="fa-solid fa-wallet brand-icon"></i>
+                    <div>
+                        <h1>Jawad Cash Management</h1>
+                        <span class="sub-heading">Secure Cash Management System</span>
+                    </div>
+                </div>
             </div>
-            <div class="header-controls">
-                <span id="network-status-bar" class="badge badge-viewer">
-                    <span class="status-dot online" style="width: 8px; height: 8px; border-radius: 50%; background: var(--success-color); display: inline-block;"></span>
-                    <span id="network-status-text">Local Engine Online</span>
-                </span>
-                <span id="status-badge" class="badge"></span>
-                <span id="live-date" class="badge badge-viewer" style="font-family: 'JetBrains Mono', monospace;"></span>
-                <span id="live-time" class="badge badge-viewer" style="font-family: 'JetBrains Mono', monospace;"></span>
-                <button id="btn-lock-edit" class="btn-secondary hide" title="Lock Editing Immediately"><i class="fa-solid fa-lock"></i> Lock</button>
-                <button id="btn-theme-toggle" class="btn-secondary"><i class="fa-solid fa-moon"></i></button>
-                <button id="btn-logout" class="btn-secondary" style="color: var(--danger-color);"><i class="fa-solid fa-right-from-bracket"></i> Exit</button>
+            
+            <div class="header-right">
+                <div class="meta-widgets">
+                    <div class="meta-widget">
+                        <i class="fa-regular fa-calendar-days"></i>
+                        <span id="live-date">July 15, 2026</span>
+                    </div>
+                    <div class="meta-widget">
+                        <i class="fa-regular fa-clock"></i>
+                        <span id="live-time">12:00:00 PM</span>
+                    </div>
+                </div>
+                
+                <div class="access-status-indicator">
+                    <span id="status-badge" class="badge badge-viewer">
+                        <i class="fa-solid fa-eye"></i> Viewer Mode
+                    </span>
+                </div>
+                
+                <div class="header-actions">
+                    <button id="btn-lock-edit" class="btn-action btn-danger-soft hide" title="Lock Editing Immediately">
+                        <i class="fa-solid fa-lock"></i> Lock Editing
+                    </button>
+                    <button id="btn-theme-toggle" class="btn-action" title="Toggle Theme Interface">
+                        <i class="fa-solid fa-moon"></i>
+                    </button>
+                    <button id="btn-logout" class="btn-action btn-logout-icon" title="Logout System Session">
+                        <i class="fa-solid fa-power-off"></i>
+                    </button>
+                </div>
             </div>
         </header>
 
-        <div class="workspace-layout">
-            <!-- Sidebar Navigation Menu -->
-            <div class="sidebar">
-                <div class="nav-tab active" data-target="tab-dashboard"><i class="fa-solid fa-chart-pie"></i> Dashboard</div>
-                <div class="nav-tab" data-target="tab-ledger"><i class="fa-solid fa-list-check"></i> Cash Ledger</div>
-                <div class="nav-tab" data-target="tab-reports"><i class="fa-solid fa-file-invoice-dollar"></i> Statements</div>
-                <div class="nav-tab" data-target="tab-admin"><i class="fa-solid fa-sliders"></i> Configuration</div>
+        <nav class="app-navigation">
+            <div class="nav-links">
+                <button class="nav-tab active" data-target="tab-dashboard">
+                    <i class="fa-solid fa-chart-line"></i> Dashboard
+                </button>
+                <button class="nav-tab" data-target="tab-cash-entry">
+                    <i class="fa-solid fa-money-bill-transfer"></i> Cash Entry
+                </button>
+                <button class="nav-tab" data-target="tab-reports">
+                    <i class="fa-solid fa-file-invoice-dollar"></i> Reports
+                </button>
+                <button class="nav-tab" data-target="tab-admin">
+                    <i class="fa-solid fa-user-shield"></i> Admin Panel
+                </button>
             </div>
+            <div class="network-status" id="network-status-bar">
+                <span class="status-dot online"></span>
+                <span id="network-status-text">Cloud Sync Online</span>
+            </div>
+        </nav>
 
-            <!-- Central Content Display Area -->
-            <div class="content-area">
+        <main class="app-content-viewport">
 
-                <!-- PANEL 1: DASHBOARD -->
-                <div id="tab-dashboard" class="tab-panel active">
-                    <div class="cards-grid">
-                        <div class="metric-card">
-                            <h4>Today Entries Registered</h4>
-                            <div id="card-today-entries" class="value">0</div>
+            <section id="tab-dashboard" class="tab-panel active">
+                <div class="dashboard-grid">
+                    
+<!-- ==========================================
+     DASHBOARD CARDS (EXACT SEQUENTIAL ADDITIONS)
+     ========================================== -->
+<div class="cards-grid">
+    
+    <!-- === COMP 1 SECTION === -->
+    <div class="metric-card">
+        <h4>Comp 1 Large Cash</h4>
+        <div id="card-comp1-large" class="value">Rs. 0.00</div>
+    </div>
+    <div class="metric-card">
+        <h4>Comp 1 Small Cash</h4>
+        <div id="card-comp1-small" class="value">Rs. 0.00</div>
+    </div>
+    <div class="metric-card">
+        <h4>Comp 1 Total Cash</h4>
+        <div id="card-comp1-total-cash" class="value">Rs. 0.00</div>
+    </div>
+    <div class="metric-card">
+        <h4>Comp 1 Account</h4>
+        <div id="card-comp1-account" class="value">Rs. 0.00</div>
+    </div>
+    <div class="metric-card">
+        <h4>Comp 1 Total Cash with Account</h4>
+        <div id="card-comp1-total-with-account" class="value">Rs. 0.00</div>
+    </div>
+
+    <!-- === COMP 2 SECTION === -->
+    <div class="metric-card">
+        <h4>Comp 2 Large Cash</h4>
+        <div id="card-comp2-large" class="value">Rs. 0.00</div>
+    </div>
+    <div class="metric-card">
+        <h4>Comp 2 Small Cash</h4>
+        <div id="card-comp2-small" class="value">Rs. 0.00</div>
+    </div>
+    <div class="metric-card">
+        <h4>Comp 2 Total Cash</h4>
+        <div id="card-comp2-total-cash" class="value">Rs. 0.00</div>
+    </div>
+    <div class="metric-card">
+        <h4>Comp 2 Account</h4>
+        <div id="card-comp2-account" class="value">Rs. 0.00</div>
+    </div>
+    <div class="metric-card">
+        <h4>Comp 2 Total Cash with Account</h4>
+        <div id="card-comp2-total-with-account" class="value">Rs. 0.00</div>
+    </div>
+
+    <!-- === TODAY'S TOTAL SECTION === -->
+    <div class="metric-card">
+        <h4>Today's Total Large Cash</h4>
+        <div id="card-today-large" class="value">Rs. 0.00</div>
+    </div>
+    <div class="metric-card">
+        <h4>Today's Total Small Cash</h4>
+        <div id="card-today-small" class="value">Rs. 0.00</div>
+    </div>
+    <div class="metric-card">
+        <h4>Today's Total Cash</h4>
+        <div id="card-today-total-cash" class="value">Rs. 0.00</div>
+    </div>
+    <div class="metric-card">
+        <h4>Today's Account</h4>
+        <div id="card-today-account" class="value">Rs. 0.00</div>
+    </div>
+    <div class="metric-card">
+        <h4>Today's Total Cash with Account</h4>
+        <div id="card-today-total-with-account" class="value">Rs. 0.00</div>
+    </div>
+
+    <!-- 7. Overall Cash (Purana Card - Safe) -->
+    <div class="summary-card">
+        <div class="card-meta">
+            <span class="card-label">Overall Cash</span>
+            <div class="card-icon-wrapper bg-purple-soft">
+                <i class="fa-solid fa-vault"></i>
+            </div>
+        </div>
+        <h2 class="card-value currency-field" id="card-overall-cash">Rs. 0</h2>
+        <span class="card-footer-info">Lifetime accumulated total balance</span>
+    </div>
+
+    <!-- 8. Monthly Cash (Purana Card - Safe) -->
+    <div class="summary-card">
+        <div class="card-meta">
+            <span class="card-label">Monthly Cash</span>
+            <div class="card-icon-wrapper bg-yellow-soft">
+                <i class="fa-solid fa-calendar-check"></i>
+            </div>
+        </div>
+        <h2 class="card-value currency-field" id="card-monthly-cash">Rs. 0</h2>
+        <span class="card-footer-info" id="card-monthly-label">Current Month</span>
+    </div>
+
+    <!-- 9. Average Cash / Day (Purana Card - Safe) -->
+    <div class="summary-card">
+        <div class="card-meta">
+            <span class="card-label">Average Cash / Day</span>
+            <div class="card-icon-wrapper bg-teal-soft">
+                <i class="fa-solid fa-scale-balanced"></i>
+            </div>
+        </div>
+        <h2 class="card-value currency-field" id="card-average-cash">Rs. 0</h2>
+        <span class="card-footer-info">Evaluated over active journal entries</span>
+    </div>
+
+</div>
+                                      <div class="dashboard-split-layout">
+                    <div class="split-card flex-column">
+                        <div class="card-header">
+                            <h3><i class="fa-solid fa-chart-pie card-header-icon"></i> Cash Allocation Profile</h3>
                         </div>
-                        <div class="metric-card">
-                            <h4>Total Cash physically in Vault</h4>
-                            <div id="card-overall-cash" class="value">Rs. 0.00</div>
+                        <div class="card-body chart-container flex-center">
+                            <div class="allocation-visual-container">
+                                
+                                <!-- Comp 1 (Large Cash) -->
+                                <div class="allocation-row">
+                                    <span class="alloc-label">Comp 1 (Large Cash)</span>
+                                    <div class="alloc-progress-wrapper">
+                                        <div class="alloc-bar bg-primary" id="bar-comp1-large" style="width: 0%"></div>
+                                    </div>
+                                    <span class="alloc-pct" id="pct-comp1-large">0%</span>
+                                </div>
+
+                                <!-- Comp 1 (Small Cash) -->
+                                <div class="allocation-row">
+                                    <span class="alloc-label">Comp 1 (Small Cash)</span>
+                                    <div class="alloc-progress-wrapper">
+                                        <div class="alloc-bar bg-info" id="bar-comp1-small" style="width: 0%"></div>
+                                    </div>
+                                    <span class="alloc-pct" id="pct-comp1-small">0%</span>
+                                </div>
+
+                                <!-- Comp 1 (Account) -->
+                                <div class="allocation-row">
+                                    <span class="alloc-label">Comp 1 (Account)</span>
+                                    <div class="alloc-progress-wrapper">
+                                        <div class="alloc-bar bg-purple-soft" id="bar-comp1-account" style="width: 0%; background-color: #8a4af3 !important;"></div>
+                                    </div>
+                                    <span class="alloc-pct" id="pct-comp1-account">0%</span>
+                                </div>
+
+                                <!-- Comp 2 (Large Cash) -->
+                                <div class="allocation-row">
+                                    <span class="alloc-label">Comp 2 (Large Cash)</span>
+                                    <div class="alloc-progress-wrapper">
+                                        <div class="alloc-bar bg-success" id="bar-comp2-large" style="width: 0%"></div>
+                                    </div>
+                                    <span class="alloc-pct" id="pct-comp2-large">0%</span>
+                                </div>
+
+                                <!-- Comp 2 (Small Cash) -->
+                                <div class="allocation-row">
+                                    <span class="alloc-label">Comp 2 (Small Cash)</span>
+                                    <div class="alloc-progress-wrapper">
+                                        <div class="alloc-bar bg-warning" id="bar-comp2-small" style="width: 0%"></div>
+                                    </div>
+                                    <span class="alloc-pct" id="pct-comp2-small">0%</span>
+                                </div>
+
+                                <!-- Comp 2 (Account) -->
+                                <div class="allocation-row">
+                                    <span class="alloc-label">Comp 2 (Account)</span>
+                                    <div class="alloc-progress-wrapper">
+                                        <div class="alloc-bar bg-purple-soft" id="bar-comp2-account" style="width: 0%; background-color: #a066ff !important;"></div>
+                                    </div>
+                                    <span class="alloc-pct" id="pct-comp2-account">0%</span>
+                                </div>
+
+                            </div> <!-- Closes allocation-visual-container -->
+                        </div> <!-- Closes card-body -->
+                    </div> <!-- Closes split-card -->
+
+                    <div class="split-card flex-column">
+                        <div class="card-header">
+                            <h3><i class="fa-solid fa-clock-rotate-left card-header-icon"></i> Recent Entry Logs</h3>
                         </div>
-                        <div class="metric-card">
-                            <h4>Total Account Balance</h4>
-                            <div id="card-account-cash" class="value">Rs. 0.00</div>
-                        </div>
-                        <div class="metric-card">
-                            <h4>Total Cash + Account Balance</h4>
-                            <div id="card-total-cash" class="value">Rs. 0.00</div>
-                        </div>
-                    </div>
-
-                    <div class="cards-grid">
-                        <div class="metric-card" style="border-left: 5px solid var(--accent-color);">
-                            <h4>Today's Cash Flow Sum</h4>
-                            <div id="card-today-cash" class="value text-bold">Rs. 0.00</div>
-                        </div>
-                        <div class="metric-card" style="border-left: 5px solid var(--success-color);">
-                            <h4 id="card-monthly-label">Monthly Total Flow</h4>
-                            <div id="card-monthly-cash" class="value">Rs. 0.00</div>
-                        </div>
-                        <div class="metric-card">
-                            <h4>Daily Flow average</h4>
-                            <div id="card-average-cash" class="value">Rs. 0.00</div>
-                        </div>
-                    </div>
-
-                    <div class="dashboard-details-container">
-                        <div class="visual-bars-card">
-                            <h3 style="margin-bottom: 1.5rem;"><i class="fa-solid fa-chart-column"></i> Real-time Allocations Profile</h3>
-                            
-                            <!-- Comp 1 Large -->
-                            <div class="bar-group">
-                                <div class="bar-label-container">
-                                    <span>Comp 1 - Large Vault Balance</span>
-                                    <span id="pct-comp1-large">0%</span>
-                                </div>
-                                <div class="progress-bar-bg">
-                                    <div id="bar-comp1-large" class="progress-bar-fill"></div>
-                                </div>
-                            </div>
-                            
-                            <!-- Comp 1 Small -->
-                            <div class="bar-group">
-                                <div class="bar-label-container">
-                                    <span>Comp 1 - Small Safe Balance</span>
-                                    <span id="pct-comp1-small">0%</span>
-                                </div>
-                                <div class="progress-bar-bg">
-                                    <div id="bar-comp1-small" class="progress-bar-fill" style="background: var(--success-color);"></div>
-                                </div>
-                            </div>
-
-                            <!-- Comp 1 Account -->
-                            <div class="bar-group">
-                                <div class="bar-label-container">
-                                    <span>Comp 1 - Account Balance</span>
-                                    <span id="pct-comp1-account">0%</span>
-                                </div>
-                                <div class="progress-bar-bg">
-                                    <div id="bar-comp1-account" class="progress-bar-fill" style="background: #a855f7;"></div>
-                                </div>
-                            </div>
-
-                            <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 1.5rem 0;">
-
-                            <!-- Comp 2 Large -->
-                            <div class="bar-group">
-                                <div class="bar-label-container">
-                                    <span>Comp 2 - Large Vault Balance</span>
-                                    <span id="pct-comp2-large">0%</span>
-                                </div>
-                                <div class="progress-bar-bg">
-                                    <div id="bar-comp2-large" class="progress-bar-fill"></div>
-                                </div>
-                            </div>
-
-                            <!-- Comp 2 Small -->
-                            <div class="bar-group">
-                                <div class="bar-label-container">
-                                    <span>Comp 2 - Small Safe Balance</span>
-                                    <span id="pct-comp2-small">0%</span>
-                                </div>
-                                <div class="progress-bar-bg">
-                                    <div id="bar-comp2-small" class="progress-bar-fill" style="background: var(--success-color);"></div>
-                                </div>
-                            </div>
-
-                            <!-- Comp 2 Account -->
-                            <div class="bar-group">
-                                <div class="bar-label-container">
-                                    <span>Comp 2 - Account Balance</span>
-                                    <span id="pct-comp2-account">0%</span>
-                                </div>
-                                <div class="progress-bar-bg">
-                                    <div id="bar-comp2-account" class="progress-bar-fill" style="background: #a855f7;"></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="recent-logs-card">
-                            <h3 style="margin-bottom: 1.5rem;"><i class="fa-solid fa-clock-rotate-left"></i> Recent Activity Registers</h3>
-                            <ul id="recent-logs-container" style="list-style: none; display: flex; flex-direction: column; gap: 1rem;">
-                                <!-- Dynamically generated log elements -->
+                        <div class="card-body overflow-y">
+                            <ul class="recent-logs-list" id="recent-logs-container">
+                                <li class="log-empty-state">No records registered in storage yet</li>
                             </ul>
                         </div>
                     </div>
-                </div>
+                </div> <!-- Closes dashboard-split-layout -->
+            </section>
 
-                <!-- PANEL 2: CASH LEDGER -->
-                <div id="tab-ledger" class="tab-panel">
-                    <div class="table-filter-bar">
-                        <div class="filter-group">
-                            <input type="date" id="search-date-filter" class="filter-input">
-                            <select id="search-month-filter" class="filter-input">
-                                <option value="">Select Month</option>
+            <section id="tab-cash-entry" class="tab-panel">
+                <div class="cash-entry-controls">
+                    <div class="search-filter-bar">
+                        <div class="form-group flex-1">
+                            <label for="search-date-filter"><i class="fa-solid fa-calendar-day"></i> Filter by Date</label>
+                            <input type="date" id="search-date-filter" class="form-control">
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="search-month-filter"><i class="fa-solid fa-calendar-week"></i> Filter Month</label>
+                            <select id="search-month-filter" class="form-control">
+                                <option value="">All Months</option>
                                 <option value="01">January</option>
                                 <option value="02">February</option>
                                 <option value="03">March</option>
@@ -643,253 +337,335 @@
                                 <option value="11">November</option>
                                 <option value="12">December</option>
                             </select>
-                            <select id="search-year-filter" class="filter-input">
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="search-year-filter"><i class="fa-solid fa-calendar-days"></i> Filter Year</label>
+                            <select id="search-year-filter" class="form-control">
+                                <option value="">All Years</option>
+                                <option value="2024">2024</option>
+                                <option value="2025">2025</option>
                                 <option value="2026" selected>2026</option>
                                 <option value="2027">2027</option>
                                 <option value="2028">2028</option>
                             </select>
-                            <button id="btn-clear-filters" class="btn-secondary">Clear Filters</button>
                         </div>
-                        <button id="btn-add-entry" class="btn-primary" style="width: auto; padding: 0.6rem 1.2rem;"><i class="fa-solid fa-circle-plus"></i> New Row</button>
-                    </div>
-
-                    <div class="table-wrapper">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th class="text-center" style="width: 50px;">S.No</th>
-                                    <th style="width: 140px;">Date</th>
-                                    <th style="width: 100px;">Day</th>
-                                    <th>Comp 1 Large</th>
-                                    <th>Comp 1 Small</th>
-                                    <th>Comp 1 Account</th>
-                                    <th>Comp 2 Large</th>
-                                    <th>Comp 2 Small</th>
-                                    <th>Comp 2 Account</th>
-                                    <th>Remarks Details</th>
-                                    <th class="text-center edit-elements-only" style="width: 80px;">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="ledger-rows-body">
-                                <!-- Generated Dynamic Rows -->
-                            </tbody>
-                            <tfoot>
-                                <!-- Today Sub-totals -->
-                                <tr>
-                                    <td colspan="3" class="text-bold text-center">Today Cash Totals</td>
-                                    <td id="today-comp1-large" class="text-right font-mono">0.00</td>
-                                    <td id="today-comp1-small" class="text-right font-mono">0.00</td>
-                                    <td id="today-comp1-account" class="text-right font-mono">0.00</td>
-                                    <td id="today-comp2-large" class="text-right font-mono">0.00</td>
-                                    <td id="today-comp2-small" class="text-right font-mono">0.00</td>
-                                    <td id="today-comp2-account" class="text-right font-mono">0.00</td>
-                                    <td class="text-bold" style="font-size:0.8rem;">
-                                        C1: <span id="today-comp1-total">0.00</span><br>
-                                        C2: <span id="today-comp2-total">0.00</span>
-                                    </td>
-                                    <td id="today-grand-total" class="text-right text-bold font-mono text-center edit-elements-only">0.00</td>
-                                </tr>
-                                <!-- Overall Lifetime Totals -->
-                                <tr>
-                                    <td colspan="3" class="text-bold text-center">Overall Cumulative</td>
-                                    <td id="overall-comp1-large" class="text-right font-mono text-muted">0.00</td>
-                                    <td id="overall-comp1-small" class="text-right font-mono text-muted">0.00</td>
-                                    <td id="overall-comp1-account" class="text-right font-mono text-muted">0.00</td>
-                                    <td id="overall-comp2-large" class="text-right font-mono text-muted">0.00</td>
-                                    <td id="overall-comp2-small" class="text-right font-mono text-muted">0.00</td>
-                                    <td id="overall-comp2-account" class="text-right font-mono text-muted">0.00</td>
-                                    <td class="text-bold" style="font-size:0.8rem;">
-                                        C1: <span id="overall-comp1-total">0.00</span><br>
-                                        C2: <span id="overall-comp2-total">0.00</span>
-                                    </td>
-                                    <td id="overall-grand-total" class="text-right text-bold font-mono text-center edit-elements-only">0.00</td>
-                                </tr>
-                            </tfoot>
-                        </table>
+                        <div class="control-actions flex-end">
+                            <button id="btn-clear-filters" class="btn-secondary" title="Clear Filters">
+                                <i class="fa-solid fa-rotate-left"></i> Reset Filter
+                            </button>
+                            <button id="btn-add-entry" class="btn-primary" disabled title="Admin Authorization Required to Insert Rows">
+                                <i class="fa-solid fa-plus"></i> Add Entry Row
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                <!-- PANEL 3: STATEMENTS / REPORTS -->
-                <div id="tab-reports" class="tab-panel">
-                    <div class="table-filter-bar">
-                        <div class="filter-group">
-                            <select id="report-month-filter" class="filter-input">
+                <div class="table-container">
+                    <table class="cash-ledger-table" id="cash-ledger-table">
+                        <thead>
+                            <tr class="header-grouping">
+                                <th rowspan="2" class="col-sno text-center">S.No</th>
+                                <th rowspan="2" class="col-date">Date</th>
+                                <th rowspan="2" class="col-day">Day</th>
+                                <th colspan="2" class="col-group text-center comp-1-color">Comp 1</th>
+                                <th colspan="2" class="col-group text-center comp-2-color">Comp 2</th>
+                                <th rowspan="2" class="col-remarks">Remarks</th>
+                                <th rowspan="2" class="col-actions text-center edit-elements-only">Actions</th>
+                            </tr>
+                            <tr class="header-sub-grouping">
+                                <th class="col-sub comp-1-color text-right">Large Cash</th>
+                                <th class="col-sub comp-1-color text-right">Small Cash</th>
+                                <th class="col-sub comp-2-color text-right">Large Cash</th>
+                                <th class="col-sub comp-2-color text-right">Small Cash</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ledger-rows-body">
+                            <tr class="table-empty-row">
+                                <td colspan="10" class="text-center">Loading Cash Ledger Records...</td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr class="total-row row-today">
+                                <td colspan="3" class="text-bold text-center label-cell">
+                                    <span class="badge badge-accent">TODAY</span> Aggregated
+                                </td>
+                                <td id="today-comp1-large" class="text-right text-bold font-mono">0.00</td>
+                                <td id="today-comp1-small" class="text-right text-bold font-mono">0.00</td>
+                                <td id="today-comp2-large" class="text-right text-bold font-mono">0.00</td>
+                                <td id="today-comp2-small" class="text-right text-bold font-mono">0.00</td>
+                                <td colspan="2" class="compound-total-label">
+                                    <div class="totals-compound-display">
+                                        <span>Total Comp 1: <strong id="today-comp1-total" class="font-mono">0.00</strong></span>
+                                        <span>Total Comp 2: <strong id="today-comp2-total" class="font-mono">0.00</strong></span>
+                                        <span class="grand-highlight">Today's Grand Total: <strong id="today-grand-total" class="font-mono">0.00</strong></span>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr class="total-row row-overall">
+                                <td colspan="3" class="text-bold text-center label-cell">
+                                    <span class="badge badge-primary">OVERALL</span> Aggregated
+                                </td>
+                                <td id="overall-comp1-large" class="text-right text-bold font-mono">0.00</td>
+                                <td id="overall-comp1-small" class="text-right text-bold font-mono">0.00</td>
+                                <td id="overall-comp2-large" class="text-right text-bold font-mono">0.00</td>
+                                <td id="overall-comp2-small" class="text-right text-bold font-mono">0.00</td>
+                                <td colspan="2" class="compound-total-label">
+                                    <div class="totals-compound-display">
+                                        <span>Total Comp 1: <strong id="overall-comp1-total" class="font-mono">0.00</strong></span>
+                                        <span>Total Comp 2: <strong id="overall-comp2-total" class="font-mono">0.00</strong></span>
+                                        <span class="grand-highlight">Overall Grand Total: <strong id="overall-grand-total" class="font-mono">0.00</strong></span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </section>
+
+            <section id="tab-reports" class="tab-panel">
+                <div class="report-dashboard-grid">
+                    <div class="report-controls-card">
+                        <h3><i class="fa-solid fa-sliders"></i> Report Filters</h3>
+                        <hr class="card-separator">
+                        <div class="form-group mb-4">
+                            <label for="report-month-filter">Select Targeted Month</label>
+                            <select id="report-month-filter" class="form-control">
                                 <option value="01">January</option>
                                 <option value="02">February</option>
                                 <option value="03">March</option>
                                 <option value="04">April</option>
                                 <option value="05">May</option>
                                 <option value="06">June</option>
-                                <option value="07" selected>July</option>
+                                <option value="07">July</option>
                                 <option value="08">August</option>
                                 <option value="09">September</option>
                                 <option value="10">October</option>
                                 <option value="11">November</option>
                                 <option value="12">December</option>
                             </select>
-                            <select id="report-year-filter" class="filter-input">
+                        </div>
+                        <div class="form-group mb-4">
+                            <label for="report-year-filter">Select Targeted Year</label>
+                            <select id="report-year-filter" class="form-control">
+                                <option value="2024">2024</option>
+                                <option value="2025">2025</option>
                                 <option value="2026" selected>2026</option>
                                 <option value="2027">2027</option>
                                 <option value="2028">2028</option>
                             </select>
                         </div>
-                        <div class="filter-group">
-                            <button id="btn-print-report" class="btn-secondary"><i class="fa-solid fa-print"></i> Print Statement</button>
-                            <button id="btn-export-csv" class="btn-primary" style="width: auto;"><i class="fa-solid fa-file-csv"></i> Export CSV</button>
+                        
+                        <div class="flex-column gap-2 mt-auto">
+                            <button id="btn-print-report" class="btn-primary btn-block">
+                                <i class="fa-solid fa-print"></i> Print Full Report
+                            </button>
+                            <button id="btn-export-csv" class="btn-success btn-block">
+                                <i class="fa-solid fa-file-csv"></i> Export to CSV
+                            </button>
+                            <button id="btn-export-xlsx" class="btn-info btn-block" disabled title="Excel native generation planned for future versions">
+                                <i class="fa-regular fa-file-excel"></i> Export Excel (Future)
+                            </button>
                         </div>
                     </div>
 
-                    <div class="table-wrapper" style="padding: 2rem;">
-                        <div style="text-align: center; margin-bottom: 2rem;">
-                            <h2>SS TRADERS</h2>
-                            <p style="color: var(--text-secondary); margin-top: 0.5rem;">Food Distributors Ledger</p>
-                            <h3 id="report-display-period-text" style="margin-top: 1rem; color: var(--accent-color);">Statement Report Period</h3>
+                    <div class="report-summary-display">
+                        <div class="report-display-header">
+                            <h3><i class="fa-solid fa-file-invoice"></i> Dynamic Summary Statement</h3>
+                            <span id="report-display-period-text" class="period-text-badge">Statement: July 2026</span>
                         </div>
-
-                        <div class="cards-grid" style="margin-bottom: 2rem;">
-                            <div class="metric-card" style="background-color: var(--bg-primary);">
-                                <h4>Total Comp 1 Balance</h4>
-                                <div id="report-sum-comp1" class="value" style="font-size: 1.5rem;">Rs. 0.00</div>
+                        <div class="report-display-body">
+                            <div class="statement-matrix">
+                                <div class="statement-row">
+                                    <div class="statement-col-title">Comp 1 Accumulated Total</div>
+                                    <div class="statement-col-value font-mono" id="report-sum-comp1">Rs. 0.00</div>
+                                </div>
+                                <div class="statement-row">
+                                    <div class="statement-col-title">Comp 2 Accumulated Total</div>
+                                    <div class="statement-col-value font-mono" id="report-sum-comp2">Rs. 0.00</div>
+                                </div>
+                                <hr class="matrix-divider">
+                                <div class="statement-row grand-highlight">
+                                    <div class="statement-col-title text-bold">Monthly Grand Total</div>
+                                    <div class="statement-col-value font-mono text-bold" id="report-sum-grand">Rs. 0.00</div>
+                                </div>
                             </div>
-                            <div class="metric-card" style="background-color: var(--bg-primary);">
-                                <h4>Total Comp 2 Balance</h4>
-                                <div id="report-sum-comp2" class="value" style="font-size: 1.5rem;">Rs. 0.00</div>
-                            </div>
-                            <div class="metric-card" style="background-color: var(--bg-primary); border: 1px solid var(--accent-color);">
-                                <h4>Grand Cumulative Total</h4>
-                                <div id="report-sum-grand" class="value" style="font-size: 1.5rem; color: var(--accent-color);">Rs. 0.00</div>
+                            
+                            <div class="mini-table-wrapper mt-4">
+                                <table class="mini-data-table" id="report-mini-table">
+                                    <thead>
+                                        <tr>
+                                            <th>S.No</th>
+                                            <th>Date</th>
+                                            <th>Day</th>
+                                            <th class="text-right">Total Comp 1</th>
+                                            <th class="text-right">Total Comp 2</th>
+                                            <th class="text-right">Grand Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="report-mini-rows">
+                                        <tr>
+                                            <td colspan="6" class="text-center text-muted">Filter criteria has no results generated.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </section>
 
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>S.No</th>
-                                    <th>Date</th>
-                                    <th>Day Name</th>
-                                    <th class="text-right">Comp 1 Sub Total</th>
-                                    <th class="text-right">Comp 2 Sub Total</th>
-                                    <th class="text-right">Combined Total</th>
-                                </tr>
-                            </thead>
-                            <tbody id="report-mini-rows">
-                                <!-- Generated Dynamic Statement Output -->
-                            </tbody>
-                        </table>
+            <section id="tab-admin" class="tab-panel">
+                <div class="admin-grid">
+                    <div class="admin-card">
+                        <div class="card-header">
+                            <h3><i class="fa-solid fa-shield-halved"></i> Access Credentials Management</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group mb-3">
+                                <label for="admin-viewer-passcode-field">Edit Viewer Passcode</label>
+                                <div class="flex-row gap-2">
+                                    <input type="password" id="admin-viewer-passcode-field" class="form-control" placeholder="••••" disabled>
+                                    <button class="btn-action btn-pwd-reveal" data-target="admin-viewer-passcode-field"><i class="fa-solid fa-eye"></i></button>
+                                </div>
+                            </div>
+                            <div class="form-group mb-4">
+                                <label for="admin-admin-passcode-field">Edit Admin Passcode</label>
+                                <div class="flex-row gap-2">
+                                    <input type="password" id="admin-admin-passcode-field" class="form-control" placeholder="••••" disabled>
+                                    <button class="btn-action btn-pwd-reveal" data-target="admin-admin-passcode-field"><i class="fa-solid fa-eye"></i></button>
+                                </div>
+                            </div>
+                            <button id="btn-update-passcodes" class="btn-primary btn-block" disabled>
+                                <i class="fa-solid fa-floppy-disk"></i> Commit New Credentials
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="admin-card">
+                        <div class="card-header">
+                            <h3><i class="fa-solid fa-database"></i> Backup & Disaster Recovery</h3>
+                        </div>
+                        <div class="card-body flex-column gap-3">
+                            <div>
+                                <p class="admin-help-text">Execute immediate JSON dumps of physical application states for local archiving. Store this in your secure directories.</p>
+                                <button id="btn-backup-local" class="btn-success btn-block" disabled>
+                                    <i class="fa-solid fa-download"></i> Backup Cash Database (JSON)
+                                </button>
+                            </div>
+                            <hr class="card-separator">
+                            <div>
+                                <p class="admin-help-text">Inject an authenticated transaction history backup. Ensure file format is compatible JSON prior to execution.</p>
+                                <div class="file-restore-wrapper">
+                                    <input type="file" id="file-restore-input" class="hide" accept=".json" disabled>
+                                    <button id="btn-trigger-restore" class="btn-info btn-block" disabled>
+                                        <i class="fa-solid fa-upload"></i> Restore Backup File
+                                    </button>
+                                </div>
+                            </div>
+                            <hr class="card-separator">
+                            <div>
+                                <p class="admin-help-text danger-text">Irreversibly delete current registers. All local-storage tables & Firebase Firestore segments will clear.</p>
+                                <button id="btn-factory-reset" class="btn-danger btn-block" disabled>
+                                    <i class="fa-solid fa-trash-can"></i> Purge Entire Database
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="admin-card">
+                        <div class="card-header">
+                            <h3><i class="fa-solid fa-cloud-arrow-up"></i> Cloud Engine Status</h3>
+                        </div>
+                        <div class="card-body flex-column">
+                            <div class="engine-status-block mb-4">
+                                <div class="engine-indicator">
+                                    <span class="engine-label">Firestore Realtime Integration</span>
+                                    <span id="firestore-engine-status" class="badge badge-warning">Unconfigured</span>
+                                </div>
+                                <p class="admin-help-text mt-2">To configure Firebase cloud syncing, make sure your configurations are injected inside <code>firebase-config.js</code> file.</p>
+                            </div>
+                            
+                            <div class="closing-protocol-block mt-auto">
+                                <div class="card-header border-none px-0 pt-0">
+                                    <h3><i class="fa-solid fa-calendar-minus"></i> Ledger Closing Protocols</h3>
+                                </div>
+                                <p class="admin-help-text mb-3">Seal all entries recorded today. Once locked, cells become permanently locked for modification unless Admin reopens the records.</p>
+                                <button id="btn-close-day" class="btn-danger-soft btn-block" disabled>
+                                    <i class="fa-solid fa-folder-closed"></i> Execute Day Closing Protocol
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- PANEL 4: ADMIN CONFIGURATION -->
-                <div id="tab-admin" class="tab-panel">
-                    <div class="dashboard-details-container" style="grid-template-columns: 1fr 1fr;">
-                        
-                        <!-- Security Settings Card -->
-                        <div class="visual-bars-card">
-                            <h3 style="margin-bottom: 1.5rem;"><i class="fa-solid fa-user-shield"></i> Security Gateway Credentials</h3>
-                            
-                            <div style="margin-bottom: 1.2rem;">
-                                <label style="display:block; font-size: 0.85rem; font-weight:600; margin-bottom:0.5rem;">Viewer Access Passcode</label>
-                                <div style="display:flex; gap:0.5rem;">
-                                    <input type="password" id="admin-viewer-passcode-field" class="filter-input" style="flex:1;" maxlength="8">
-                                    <button class="btn-secondary btn-pwd-reveal" data-target="admin-viewer-passcode-field"><i class="fa-solid fa-eye"></i></button>
-                                </div>
-                            </div>
-
-                            <div style="margin-bottom: 1.5rem;">
-                                <label style="display:block; font-size: 0.85rem; font-weight:600; margin-bottom:0.5rem;">Admin Access Passcode</label>
-                                <div style="display:flex; gap:0.5rem;">
-                                    <input type="password" id="admin-admin-passcode-field" class="filter-input" style="flex:1;" maxlength="8">
-                                    <button class="btn-secondary btn-pwd-reveal" data-target="admin-admin-passcode-field"><i class="fa-solid fa-eye"></i></button>
-                                </div>
-                            </div>
-
-                            <button id="btn-update-passcodes" class="btn-primary">Update Secure Credentials</button>
-                        </div>
-
-                        <!-- Data Engine Controls Card -->
-                        <div class="recent-logs-card">
-                            <h3 style="margin-bottom: 1.5rem;"><i class="fa-solid fa-database"></i> Database & Recovery Engine</h3>
-                            
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1.2rem;">
-                                <span>Firebase Synchronization</span>
-                                <span id="firestore-engine-status" class="badge">Checking Engine...</span>
-                            </div>
-
-                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem; margin-bottom: 1.5rem;">
-                                <button id="btn-backup-local" class="btn-secondary"><i class="fa-solid fa-download"></i> Backup Local</button>
-                                <button id="btn-trigger-restore" class="btn-secondary"><i class="fa-solid fa-upload"></i> Restore Backup</button>
-                                <input type="file" id="file-restore-input" style="display:none;" accept=".json">
-                            </div>
-
-                            <div style="display:flex; flex-direction:column; gap:0.8rem;">
-                                <button id="btn-close-day" class="btn-secondary" style="background: rgba(16, 185, 129, 0.08); border-color: var(--success-color); color: var(--success-color);">
-                                    <i class="fa-solid fa-calendar-check"></i> Sealed/Daily Closing Protocol Toggle
-                                </button>
-                                <button id="btn-factory-reset" class="btn-danger btn-action">
-                                    <i class="fa-solid fa-triangle-exclamation"></i> Full Database Hard Purge
-                                </button>
-                            </div>
-                        </div>
+                <div class="admin-log-panel mt-4">
+                    <div class="card-header justify-between">
+                        <h3><i class="fa-solid fa-user-clock"></i> Access Login Footprints History</h3>
+                        <button id="btn-clear-history" class="btn-secondary btn-sm" disabled>
+                            <i class="fa-solid fa-broom"></i> Clear Trace Logs
+                        </button>
                     </div>
-
-                    <!-- Authorization footprints Logs -->
-                    <div class="table-wrapper" style="margin-top: 2rem;">
-                        <div style="padding: 1.5rem; display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid var(--border-color);">
-                            <h3><i class="fa-solid fa-receipt"></i> System Activity Footprints Logs</h3>
-                            <button id="btn-clear-history" class="btn-secondary" style="color:var(--danger-color);"><i class="fa-solid fa-eraser"></i> Clear Logs</button>
-                        </div>
-                        <table>
+                    <div class="log-table-wrapper">
+                        <table class="log-table" id="history-log-table">
                             <thead>
                                 <tr>
-                                    <th>Date</th>
+                                    <th>Authentication Date</th>
                                     <th>Timestamp</th>
-                                    <th>Authorized Device Platform</th>
-                                    <th>Role Level</th>
-                                    <th>Activity Description</th>
+                                    <th>Terminal Browser / Platform Metadata</th>
+                                    <th>Authorized Access Role</th>
+                                    <th>Status Details</th>
                                 </tr>
                             </thead>
                             <tbody id="history-log-body">
-                                <!-- System trace elements -->
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">No historical session footprints captured on this node yet.</td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
-
-            </div>
-        </div>
+            </section>
+        </main>
     </div>
 
-    <!-- ==========================================
-         PORTAL MODAL CHANNELS
-         ========================================== -->
-
-    <!-- Elevate Access Modal -->
     <div id="passcode-modal" class="modal-overlay hide">
         <div class="modal-card">
-            <h3 style="margin-bottom:0.5rem;"><i class="fa-solid fa-key"></i> Administrator Verification Required</h3>
-            <p style="color:var(--text-secondary); font-size:0.85rem; margin-bottom:1.5rem;">Enter structural Master Administrative credential to grant clearance.</p>
-            <input type="password" id="modal-passcode-field" class="filter-input" style="width:100%; text-align:center; font-size:1.4rem; letter-spacing:0.4rem;" maxlength="8" placeholder="••••">
-            <p id="modal-error-text" class="gatekeeper-error hide" style="text-align:center; margin-bottom:1rem;">Invalid authentication passcode!</p>
-            <div class="modal-buttons">
-                <button class="btn-secondary modal-dismiss-trigger" style="flex:1;">Cancel Access</button>
-                <button id="btn-modal-verify" class="btn-primary" style="flex:1;">Verify Access</button>
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-lock-open text-primary"></i> Upgrade to Admin Role</h3>
+                <button class="btn-modal-close modal-dismiss-trigger"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-info-txt">Enter your 4-digit Administrator Key Code to unlock writing, editing, configurations, backing-up or system resets.</p>
+                <div class="form-group mb-3">
+                    <input type="password" id="modal-passcode-field" class="form-control text-center text-large" placeholder="••••" maxlength="8">
+                    <span id="modal-error-text" class="error-text hide text-center mt-2">Passcode validation rejected.</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary modal-dismiss-trigger">Cancel</button>
+                <button id="btn-modal-verify" class="btn-primary">Elevate Permissions</button>
             </div>
         </div>
     </div>
 
-    <!-- Generic Confirmation Dialog -->
     <div id="confirm-modal" class="modal-overlay hide">
         <div class="modal-card">
-            <h3 id="confirm-modal-title" style="margin-bottom:0.5rem; color:var(--danger-color);">Confirm Action?</h3>
-            <p id="confirm-modal-message" style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:1.5rem; line-height:1.4;">Are you sure you want to perform this execution?</p>
-            <div class="modal-buttons">
-                <button class="btn-secondary modal-dismiss-trigger" style="flex:1;">Cancel</button>
-                <button id="btn-confirm-action" class="btn-primary btn-danger" style="flex:1;">Execute Action</button>
+            <div class="modal-header">
+                <h3 id="confirm-modal-title">Confirm Database Action</h3>
+                <button class="btn-modal-close modal-dismiss-trigger"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <p id="confirm-modal-message" class="modal-info-txt">Are you sure you want to execute this irreversible structural modification operation?</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary modal-dismiss-trigger">Cancel</button>
+                <button id="btn-confirm-action" class="btn-danger">Proceed Operation</button>
             </div>
         </div>
     </div>
 
-    <!-- Connect JS Scripts -->
+    <script src="firebase-config.js"></script>
+    <script src="firebase.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

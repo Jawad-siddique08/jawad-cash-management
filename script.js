@@ -1,1454 +1,1095 @@
 /**
- * JAWAD CASH MANAGEMENT - CORE LOGIC ENGINE
- * Complete, highly-optimized production controller handling authentication levels,
- * localized calculations, database synchronization, PWA state management, and reports.
+ * JAWAD CASH MANAGEMENT SYSTEM - COMMERCIAL CORE ENGINE
+ * Architecture Strategy: Progressive Vanilla Javascript App Architecture
+ * Operational Context: Commercial Grade Data Processing, Multi-level Auth, Fail-Safe Local Cache
  */
 
-(function () {
-    'use strict';
-
-    // ==========================================
-    // SYSTEM STATE CONFIGURATION
-    // ==========================================
-    const DEFAULT_PASS_VIEWER = "4863";
-    const DEFAULT_PASS_ADMIN = "2008";
-
-    let state = {
-        role: null, // 'viewer' | 'admin'
-        passcodeViewer: localStorage.getItem('jcm_passcode_viewer') || DEFAULT_PASS_VIEWER,
-        passcodeAdmin: localStorage.getItem('jcm_passcode_admin') || DEFAULT_PASS_ADMIN,
-        ledgerData: [], // Array of ledger records
-        loginHistory: [], // Session history
-        closedDays: [], // Dates sealed under Daily Closing protocol
-        theme: localStorage.getItem('jcm_theme') || 'light-mode',
-        filters: {
-            date: '',
-            month: '',
-            year: '2026' // Matches the default index.html selector
+// GLOBAL CORE STORAGE STATE ENGINE
+window.AppEngine = {
+    state: {
+        records: [],
+        loginHistory: [],
+        security: {
+            webPin: "4863",
+            adminPin: "2008"
         },
-        currentEditRowId: null
-    };
+        closingLog: {
+            closedDates: [] // Array tracking YYYY-MM-DD strings that are closed
+        },
+        accessLevel: 0, // 0 = Completely Locked, 1 = View Only Access, 2 = Full Admin Control
+        activeTab: "dashboard-section",
+        theme: "light-theme",
+        isCloudConnected: false,
+        currentUser: null
+    },
 
-    // Reference pointer for general operational closures
-    let confirmationCallback = null;
-
-    // Localized Pakistani Rupee Currency Formatter
-    const currencyFormatter = new Intl.NumberFormat('en-PK', {
-        style: 'currency',
-        currency: 'PKR',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    });
-
-    // ==========================================
-    // DOM SELECTORS
-    // ==========================================
-    const DOM = {
-        // Overlay and Security Screen
-        gatekeeperOverlay: document.getElementById('gatekeeper-overlay'),
-        passcodeInput: document.getElementById('passcode-input'),
-        toggleGatekeeperPasscode: document.getElementById('toggle-gatekeeper-passcode'),
-        gatekeeperError: document.getElementById('gatekeeper-error'),
-        btnAuthenticate: document.getElementById('btn-authenticate'),
-        appContainer: document.getElementById('app-container'),
-        statusBadge: document.getElementById('status-badge'),
-        btnLockEdit: document.getElementById('btn-lock-edit'),
-        btnThemeToggle: document.getElementById('btn-theme-toggle'),
-        btnLogout: document.getElementById('btn-logout'),
-
-        // Live Displays
-        liveDate: document.getElementById('live-date'),
-        liveTime: document.getElementById('live-time'),
-        networkStatusText: document.getElementById('network-status-text'),
-        networkStatusBar: document.getElementById('network-status-bar'),
-
-        // Tab System
-        navTabs: document.querySelectorAll('.nav-tab'),
-        panels: document.querySelectorAll('.tab-panel'),
-
-        // // Dashboard Elements
-        cardTodayEntries: document.getElementById('card-today-entries'),
-        cardComp1Large: document.getElementById('card-comp1-large'),
-        cardComp1Small: document.getElementById('card-comp1-small'),
-        cardComp1TotalCash: document.getElementById('card-comp1-total-cash'),
-        cardComp1Account: document.getElementById('card-comp1-account'),
-        cardComp1TotalWithAccount: document.getElementById('card-comp1-total-with-account'),
+    // CACHE SYNC LAYER MANAGERS
+    cache: {
+        storageKey: "JCM_OFFLINE_CACHE_PROD",
         
-        cardComp2Large: document.getElementById('card-comp2-large'),
-        cardComp2Small: document.getElementById('card-comp2-small'),
-        cardComp2TotalCash: document.getElementById('card-comp2-total-cash'),
-        cardComp2Account: document.getElementById('card-comp2-account'),
-        cardComp2TotalWithAccount: document.getElementById('card-comp2-total-with-account'),
-        
-        cardTodayLarge: document.getElementById('card-today-large'),
-        cardTodaySmall: document.getElementById('card-today-small'),
-        cardTodayTotalCash: document.getElementById('card-today-total-cash'),
-        cardTodayAccount: document.getElementById('card-today-account'),
-        cardTodayTotalWithAccount: document.getElementById('card-today-total-with-account'),
-        
-        cardMonthlyCash: document.getElementById('card-monthly-cash'),
-        cardMonthlyLabel: document.getElementById('card-monthly-label'),
-        cardAverageCash: document.getElementById('card-average-cash'),
-
-        // Dashboard Graphic Visuals
-        barComp1Large: document.getElementById('bar-comp1-large'),
-        pctComp1Large: document.getElementById('pct-comp1-large'),
-        barComp1Small: document.getElementById('bar-comp1-small'),
-        pctComp1Small: document.getElementById('pct-comp1-small'),
-        barComp2Large: document.getElementById('bar-comp2-large'),
-        pctComp2Large: document.getElementById('pct-comp2-large'),
-        barComp2Small: document.getElementById('bar-comp2-small'),
-        pctComp2Small: document.getElementById('pct-comp2-small'),
-const barComp1Account = document.getElementById('bar-comp1-account');
-const pctComp1Account = document.getElementById('pct-comp1-account');
-// Aur Comp 2 ke liye:
-const barComp2Account = document.getElementById('bar-comp2-account');
-const pctComp2Account = document.getElementById('pct-comp2-account');
-        recentLogsContainer: document.getElementById('recent-logs-container'),
-
-        // Cash Entry Table Elements
-        searchDateFilter: document.getElementById('search-date-filter'),
-        searchMonthFilter: document.getElementById('search-month-filter'),
-        searchYearFilter: document.getElementById('search-year-filter'),
-        btnClearFilters: document.getElementById('btn-clear-filters'),
-        btnAddEntry: document.getElementById('btn-add-entry'),
-        ledgerBody: document.getElementById('ledger-rows-body'),
-
-        // Live Calculating Table Footers (TODAY)
-        todayComp1Large: document.getElementById('today-comp1-large'),
-        todayComp1Small: document.getElementById('today-comp1-small'),
-        todayComp2Large: document.getElementById('today-comp2-large'),
-        todayComp2Small: document.getElementById('today-comp2-small'),
-        todayComp1Total: document.getElementById('today-comp1-total'),
-        todayComp2Total: document.getElementById('today-comp2-total'),
-        todayGrandTotal: document.getElementById('today-grand-total'),
-
-        // Live Calculating Table Footers (OVERALL)
-        overallComp1Large: document.getElementById('overall-comp1-large'),
-        overallComp1Small: document.getElementById('overall-comp1-small'),
-        overallComp2Large: document.getElementById('overall-comp2-large'),
-        overallComp2Small: document.getElementById('overall-comp2-small'),
-        overallComp1Total: document.getElementById('overall-comp1-total'),
-        overallComp2Total: document.getElementById('overall-comp2-total'),
-        overallGrandTotal: document.getElementById('overall-grand-total'),
-
-        // Reports View Panel Elements
-        reportMonthFilter: document.getElementById('report-month-filter'),
-        reportYearFilter: document.getElementById('report-year-filter'),
-        btnPrintReport: document.getElementById('btn-print-report'),
-        btnExportCsv: document.getElementById('btn-export-csv'),
-        reportPeriodText: document.getElementById('report-display-period-text'),
-        reportSumComp1: document.getElementById('report-sum-comp1'),
-        reportSumComp2: document.getElementById('report-sum-comp2'),
-        reportSumGrand: document.getElementById('report-sum-grand'),
-        reportMiniRows: document.getElementById('report-mini-rows'),
-
-        // Admin Configuration Controls
-        adminViewerPasscode: document.getElementById('admin-viewer-passcode-field'),
-        adminAdminPasscode: document.getElementById('admin-admin-passcode-field'),
-        btnUpdatePasscodes: document.getElementById('btn-update-passcodes'),
-        btnBackupLocal: document.getElementById('btn-backup-local'),
-        fileRestoreInput: document.getElementById('file-restore-input'),
-        btnTriggerRestore: document.getElementById('btn-trigger-restore'),
-        btnFactoryReset: document.getElementById('btn-factory-reset'),
-        btnCloseDay: document.getElementById('btn-close-day'),
-        btnClearHistory: document.getElementById('btn-clear-history'),
-        historyLogBody: document.getElementById('history-log-body'),
-        firestoreEngineStatus: document.getElementById('firestore-engine-status'),
-
-        // Elevate Access Modal Portal
-        passcodeModal: document.getElementById('passcode-modal'),
-        modalPasscodeField: document.getElementById('modal-passcode-field'),
-        modalErrorText: document.getElementById('modal-error-text'),
-        btnModalVerify: document.getElementById('btn-modal-verify'),
-
-        // Generic Dynamic Confirmation Dialog Portal
-        confirmModal: document.getElementById('confirm-modal'),
-        confirmModalTitle: document.getElementById('confirm-modal-title'),
-        confirmModalMessage: document.getElementById('confirm-modal-message'),
-        btnConfirmAction: document.getElementById('btn-confirm-action')
-    };
-
-    // ==========================================
-    // UTILITY HELPER & DECORATOR FUNCTIONS
-    // ==========================================
-
-    /**
-     * Standardizes floating value parsed from input string
-     */
-    function parseCleanNumber(input) {
-        if (!input) return 0.00;
-        const cleaned = String(input).replace(/[^\d.-]/g, '');
-        const val = parseFloat(cleaned);
-        return isNaN(val) || val < 0 ? 0.00 : val;
-    }
-
-    /**
-     * Standardizes dynamic string formats cleanly to Pakistani currency notation
-     */
-    function formatPKR(amount) {
-        return currencyFormatter.format(parseCleanNumber(amount));
-    }
-
-    /**
-     * Resolves human readable Day name based on absolute date string input
-     */
-    function resolveDayName(dateString) {
-        if (!dateString) return '';
-        const parsedDate = new Date(dateString);
-        if (isNaN(parsedDate.getTime())) return '';
-        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        return days[parsedDate.getDay()];
-    }
-
-    /**
-     * Formats default systems generated timestamps
-     */
-    function getCurrentFormattedTime() {
-        const time = new Date();
-        return time.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    }
-
-    function getCurrentFormattedDate() {
-        const date = new Date();
-        return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-    }
-
-    function getFormattedDateISO(date = new Date()) {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    }
-
-    // ==========================================
-    // SYSTEM DATABASE & LOCAL STORAGE CORE
-    // ==========================================
-
-    /**
-     * Initializes structural default local components on fresh setup
-     */
-    function initDatabaseState() {
-        // Theme init
-        document.body.className = state.theme;
-        
-        // Ledger table setup
-        const localData = localStorage.getItem('jcm_ledger_data');
-        if (localData) {
-            state.ledgerData = JSON.parse(localData);
-        } else {
-            // Setup default placeholder items in local DB so system starts beautifully
-            state.ledgerData = [
-                {
-                    id: "init-row-1",
-                    date: getFormattedDateISO(),
-                    day: resolveDayName(getFormattedDateISO()),
-                    comp1_large: 250000.00,
-                    comp1_small: 15000.00,
-                    comp2_large: 180000.00,
-                    comp2_small: 8500.00,
-                    remarks: "Opening Cash Pool Initialized",
-                    locked: false
+        initializeLocalCache() {
+            const cachePayload = localStorage.getItem(this.storageKey);
+            if (cachePayload) {
+                try {
+                    const parsedData = JSON.parse(cachePayload);
+                    if (parsedData.records) window.AppEngine.state.records = parsedData.records;
+                    if (parsedData.loginHistory) window.AppEngine.state.loginHistory = parsedData.loginHistory;
+                    if (parsedData.security) window.AppEngine.state.security = parsedData.security;
+                    if (parsedData.closingLog) window.AppEngine.state.closingLog = parsedData.closingLog;
+                    if (parsedData.theme) window.AppEngine.state.theme = parsedData.theme;
+                } catch (e) {
+                    console.error("Local structural recovery cache reading failure: ", e);
                 }
-            ];
-            commitLedgerToDatabase();
-        }
-
-        // Close Days table setup
-        const localClosedDays = localStorage.getItem('jcm_closed_days');
-        if (localClosedDays) {
-            state.closedDays = JSON.parse(localClosedDays);
-        }
-
-        // Session Trace initialization
-        const traceData = localStorage.getItem('jcm_login_history');
-        if (traceData) {
-            state.loginHistory = JSON.parse(traceData);
-        }
-    }
-
-    /**
-     * Persists cash record modifications immediately to local variables and syncs
-     */
-    function commitLedgerToDatabase() {
-        localStorage.setItem('jcm_ledger_data', JSON.stringify(state.ledgerData));
-        
-        // If external cloud Firebase integrations exist, run active backup synchronization
-        if (window.FirebaseEngine && window.FirebaseEngine.isConfigured()) {
-            window.FirebaseEngine.syncLedgerToCloud(state.ledgerData);
-        }
-        
-        recalculateAllSystemAggregates();
-    }
-
-    /**
-     * Saves operational session authentication logs safely
-     */
-    function writeFootprintLog(statusMessage, assignedRole) {
-        const userAgent = navigator.userAgent;
-        let platform = "Unknown Device Platform";
-        if (userAgent.indexOf("Windows") !== -1) platform = "Windows Workspace Terminal";
-        else if (userAgent.indexOf("Android") !== -1) platform = "Android Mobile App PWA";
-        else if (userAgent.indexOf("iPad") !== -1 || userAgent.indexOf("iPhone") !== -1) platform = "iOS Portal Native App";
-        else if (userAgent.indexOf("Macintosh") !== -1) platform = "macOS Workstation client";
-
-        const logItem = {
-            date: getFormattedDateISO(),
-            time: getCurrentFormattedTime(),
-            device: platform,
-            role: assignedRole === 'admin' ? 'Administrator Portal' : 'Staff Viewer Access',
-            status: statusMessage
-        };
-
-        state.loginHistory.unshift(logItem);
-        // Constrain history to last 50 entries
-        if (state.loginHistory.length > 50) {
-            state.loginHistory.pop();
-        }
-
-        localStorage.setItem('jcm_login_history', JSON.stringify(state.loginHistory));
-        renderLoginTraceLogs();
-
-        if (window.FirebaseEngine && window.FirebaseEngine.isConfigured()) {
-            window.FirebaseEngine.syncLogsToCloud(state.loginHistory);
-        }
-    }
-
-    // ==========================================
-    // UI LAYOUT RENDER ENGINE
-    // ==========================================
-
-    /**
-     * Generates cash entries on-screen while maintaining live element constraints
-     */
-    function renderLedgerTable() {
-        DOM.ledgerBody.innerHTML = '';
-
-        // Match Filter conditions
-        const filteredRecords = state.ledgerData.filter(record => {
-            if (state.filters.date && record.date !== state.filters.date) return false;
-            
-            if (record.date) {
-                const parts = record.date.split('-'); // [YYYY, MM, DD]
-                if (state.filters.month && parts[1] !== state.filters.month) return false;
-                if (state.filters.year && parts[0] !== state.filters.year) return false;
+            } else {
+                this.commitStateToCache();
             }
-            return true;
-        });
+        },
 
-        // Ensure records are ordered by date descending so latest operations sit up-front
-        filteredRecords.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-        if (filteredRecords.length === 0) {
-            DOM.ledgerBody.innerHTML = `
-                <tr>
-                    <td colspan="9" class="text-center text-muted" style="padding: 3rem;">
-                        <i class="fa-solid fa-folder-open fa-3x mb-3" style="display:block; opacity: 0.5;"></i>
-                        No Cash Ledger Records Found matching specified criteria.
-                    </td>
-                </tr>
-            `;
-            return;
+        commitStateToCache() {
+            const cachePayload = {
+                records: window.AppEngine.state.records,
+                loginHistory: window.AppEngine.state.loginHistory,
+                security: window.AppEngine.state.security,
+                closingLog: window.AppEngine.state.closingLog,
+                theme: window.AppEngine.state.theme
+            };
+            localStorage.setItem(this.storageKey, JSON.stringify(cachePayload));
+            
+            // Dispatch dynamic event notifications targeted for independent firebase sync bridges
+            window.dispatchEvent(new CustomEvent("jcm_local_state_changed", { detail: cachePayload }));
         }
+    },
 
-        filteredRecords.forEach((record, idx) => {
-            const tr = document.createElement('tr');
-            tr.dataset.id = record.id;
-            
-            const isClosed = state.closedDays.includes(record.date);
-            const isReadonly = state.role !== 'admin' || isClosed;
-            
-            if (isClosed || record.locked) {
-                tr.classList.add('row-locked');
-            }
+    // UTILITIES & DATA TYPE PARSERS
+    utils: {
+        parseNumeric(value) {
+            if (!value) return 0;
+            if (typeof value === "number") return Math.abs(value);
+            const sanitized = value.toString().replace(/[^0-9.]/g, "");
+            const parsed = parseFloat(sanitized);
+            return isNaN(parsed) ? 0 : Math.abs(parsed);
+        },
 
-            const inputDisabledAttr = isReadonly ? 'disabled' : '';
-
-            tr.innerHTML = `
-                <td class="col-sno text-center">${idx + 1}</td>
-                <td>
-                    <input type="date" class="table-input cell-date" value="${record.date || ''}" ${inputDisabledAttr}>
-                </td>
-                <td class="col-day cell-day">${record.day || ''}</td>
-                <td>
-                    <input type="text" class="table-input cell-comp1-large text-right font-mono" value="${formatPKR(record.comp1_large)}" ${inputDisabledAttr}>
-                </td>
-                <td>
-                    <input type="text" class="table-input cell-comp1-small text-right font-mono" value="${formatPKR(record.comp1_small)}" ${inputDisabledAttr}>
-                </td>
-                <td>
-                    <input type="text" class="table-input cell-comp2-large text-right font-mono" value="${formatPKR(record.comp2_large)}" ${inputDisabledAttr}>
-                </td>
-                <td>
-                    <input type="text" class="table-input cell-comp2-small text-right font-mono" value="${formatPKR(record.comp2_small)}" ${inputDisabledAttr}>
-                </td>
-                <td>
-                    <input type="text" class="table-input cell-remarks" value="${record.remarks || ''}" placeholder="Enter remarks..." ${inputDisabledAttr}>
-                </td>
-                <td class="col-actions text-center edit-elements-only ${state.role !== 'admin' ? 'hide' : ''}">
-                    <button class="btn-action btn-danger btn-delete-row" title="Delete Ledger Row" ${isClosed ? 'disabled' : ''}>
-                        <i class="fa-solid fa-trash-can"></i>
-                    </button>
-                </td>
-            `;
-
-            // Bind Cell Inputs Event Handlers (Focus / Change / Calculations)
-            bindTableRowCellEvents(tr, record);
-            DOM.ledgerBody.appendChild(tr);
-        });
-
-        // Sync visual visibility toggling actions
-        applyRoleAccessPermissions();
-    }
-
-    /**
-     * Live input events management to enforce Pakistani currency parameters
-     */
-    function bindTableRowCellEvents(rowElement, record) {
-        const dateInput = rowElement.querySelector('.cell-date');
-        const comp1LargeInput = rowElement.querySelector('.cell-comp1-large');
-        const comp1SmallInput = rowElement.querySelector('.cell-comp1-small');
-        const comp2LargeInput = rowElement.querySelector('.cell-comp2-large');
-        const comp2SmallInput = rowElement.querySelector('.cell-comp2-small');
-        const remarksInput = rowElement.querySelector('.cell-remarks');
-        const deleteBtn = rowElement.querySelector('.btn-delete-row');
-
-        // Focus formatting clean up
-        const formatInputOnFocus = (e) => {
-            const cleanVal = parseCleanNumber(e.target.value);
-            e.target.value = cleanVal === 0 ? '' : cleanVal.toFixed(2);
-        };
-
-        const formatInputOnBlur = (e, fieldName) => {
-            const rawVal = parseCleanNumber(e.target.value);
-            e.target.value = formatPKR(rawVal);
-            
-            // Commit structure changes to master memory
-            const item = state.ledgerData.find(item => item.id === record.id);
-            if (item) {
-                item[fieldName] = rawVal;
-                commitLedgerToDatabase();
-            }
-        };
-
-        comp1LargeInput.addEventListener('focus', formatInputOnFocus);
-        comp1LargeInput.addEventListener('blur', (e) => formatInputOnBlur(e, 'comp1_large'));
-
-        comp1SmallInput.addEventListener('focus', formatInputOnFocus);
-        comp1SmallInput.addEventListener('blur', (e) => formatInputOnBlur(e, 'comp1_small'));
-
-        comp2LargeInput.addEventListener('focus', formatInputOnFocus);
-        comp2LargeInput.addEventListener('blur', (e) => formatInputOnBlur(e, 'comp2_large'));
-
-        comp2SmallInput.addEventListener('focus', formatInputOnFocus);
-        comp2SmallInput.addEventListener('blur', (e) => formatInputOnBlur(e, 'comp2_small'));
-
-        // Date update logic
-        dateInput.addEventListener('change', (e) => {
-            const newDate = e.target.value;
-            const newDay = resolveDayName(newDate);
-            
-            rowElement.querySelector('.cell-day').innerText = newDay;
-            
-            const item = state.ledgerData.find(item => item.id === record.id);
-            if (item) {
-                item.date = newDate;
-                item.day = newDay;
-                commitLedgerToDatabase();
-            }
-        });
-
-        // Remarks dynamic save
-        remarksInput.addEventListener('change', (e) => {
-            const item = state.ledgerData.find(item => item.id === record.id);
-            if (item) {
-                item.remarks = e.target.value;
-                commitLedgerToDatabase();
-            }
-        });
-
-        // Delete Row Operation Event Trigger
-        if (deleteBtn) {
-            deleteBtn.addEventListener('click', () => {
-                triggerConfirmationDialog(
-                    "Delete Row Entry?",
-                    `Are you sure you want to delete cash ledger entry S.No: ${rowElement.querySelector('.col-sno').innerText}? This is irreversible.`,
-                    () => {
-                        state.ledgerData = state.ledgerData.filter(item => item.id !== record.id);
-                        commitLedgerToDatabase();
-                        renderLedgerTable();
-                    }
-                );
+        formatPKR(value) {
+            const numericalValue = this.parseNumeric(value);
+            return "PKR " + numericalValue.toLocaleString("en-US", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
             });
+        },
+
+        computeDayName(dateString) {
+            if (!dateString) return "---";
+            const structuralParts = dateString.split("-");
+            if (structuralParts.length !== 3) return "---";
+            // Construct safe Date objects preventing timezone displacement offsets
+            const evaluationDate = new Date(structuralParts[0], structuralParts[1] - 1, structuralParts[2]);
+            const options = { weekday: "Long" };
+            return evaluationDate.toLocaleDateString("en-US", options);
+        },
+
+        getSystemDateString() {
+            const trackingDate = new Date();
+            const year = trackingDate.getFullYear();
+            const month = String(trackingDate.getMonth() + 1).padStart(2, "0");
+            const day = String(trackingDate.getDate()).padStart(2, "0");
+            return `${year}-${month}-${day}`;
+        },
+
+        generateUUID() {
+            return "row-id-" + Math.random().toString(36).substr(2, 9) + "-" + Date.now().toString(36);
         }
-    }
-
-    /**
-     * Real-time engine calculating totals, today's targets and dashboard stats
-     */
-    function recalculateAllSystemAggregates() {
-        const todayISO = getFormattedDateISO();
-        
-        // --- 1. Aggregations Containers ---
-        let totals = {
-            today: { c1L: 0, c1S: 0, c2L: 0, c2S: 0 },
-            overall: { c1L: 0, c1S: 0, c2L: 0, c2S: 0 }
-        };
-
-        let uniqueDatesWithEntries = new Set();
-
-        state.ledgerData.forEach(rec => {
-            const c1lVal = parseCleanNumber(rec.comp1_large);
-            const c1sVal = parseCleanNumber(rec.comp1_small);
-            const c2lVal = parseCleanNumber(rec.comp2_large);
-            const c2sVal = parseCleanNumber(rec.comp2_small);
-
-            if (rec.date) {
-                uniqueDatesWithEntries.add(rec.date);
-            }
-
-            // Today targets aggregation matching
-            if (rec.date === todayISO) {
-                totals.today.c1L += c1lVal;
-                totals.today.c1S += c1sVal;
-                totals.today.c2L += c2lVal;
-                totals.today.c2S += c2sVal;
-            }
-
-            // Lifetime tracking calculations
-            totals.overall.c1L += c1lVal;
-            totals.overall.c1S += c1sVal;
-            totals.overall.c2L += c2lVal;
-            totals.overall.c2S += c2sVal;
-        });
-
-        // Multi-level calculations
-        const todayComp1TotalSum = totals.today.c1L + totals.today.c1S;
-        const todayComp2TotalSum = totals.today.c2L + totals.today.c2S;
-        const todayGrandOverallSum = todayComp1TotalSum + todayComp2TotalSum;
-
-        const overallComp1TotalSum = totals.overall.c1L + totals.overall.c1S;
-        const overallComp2TotalSum = totals.overall.c2L + totals.overall.c2S;
-        const overallGrandOverallSum = overallComp1TotalSum + overallComp2TotalSum;
-
-        // --- 2. Update Cash Entry View Table Footers ---
-        DOM.todayComp1Large.innerText = formatPKR(totals.today.c1L).replace("Rs.", "");
-        DOM.todayComp1Small.innerText = formatPKR(totals.today.c1S).replace("Rs.", "");
-        DOM.todayComp2Large.innerText = formatPKR(totals.today.c2L).replace("Rs.", "");
-        DOM.todayComp2Small.innerText = formatPKR(totals.today.c2S).replace("Rs.", "");
-        DOM.todayComp1Total.innerText = formatPKR(todayComp1TotalSum);
-        DOM.todayComp2Total.innerText = formatPKR(todayComp2TotalSum);
-        DOM.todayGrandTotal.innerText = formatPKR(todayGrandOverallSum);
-
-        DOM.overallComp1Large.innerText = formatPKR(totals.overall.c1L).replace("Rs.", "");
-        DOM.overallComp1Small.innerText = formatPKR(totals.overall.c1S).replace("Rs.", "");
-        DOM.overallComp2Large.innerText = formatPKR(totals.overall.c2L).replace("Rs.", "");
-        DOM.overallComp2Small.innerText = formatPKR(totals.overall.c2S).replace("Rs.", "");
-        DOM.overallComp1Total.innerText = formatPKR(overallComp1TotalSum);
-        DOM.overallComp2Total.innerText = formatPKR(overallComp2TotalSum);
-        DOM.overallGrandTotal.innerText = formatPKR(overallGrandOverallSum);
-
-        // --- 3. Compute Monthly Dashboard Statistics Target ---
-        const currentYearStr = "2026";
-        const currentMonthStr = String(new Date().getMonth() + 1).padStart(2, '0');
-        let monthlyTotalCashSum = 0;
-
-        state.ledgerData.forEach(rec => {
-            if (rec.date) {
-                const parts = rec.date.split('-');
-                if (parts[0] === currentYearStr && parts[1] === currentMonthStr) {
-                    monthlyTotalCashSum += parseCleanNumber(rec.comp1_large) +
-                                           parseCleanNumber(rec.comp1_small) +
-                                           parseCleanNumber(rec.comp2_large) +
-                                           parseCleanNumber(rec.comp2_small);
-                }
-            }
-        });
-
-        // --- 4. Render Dashboard Summary Card Elements ---
-    const todayRecordCount = state.ledgerData.filter(rec => rec.date === todayISO).length;
-    DOM.cardTodayEntries.innerText = todayRecordCount;
-
-    // Naye 15 Cards Ki Custom Pure Calculation Engine
-    let oC1Large = 0, oC1Small = 0, oC1Account = 0;
-    let oC2Large = 0, oC2Small = 0, oC2Account = 0;
-    let tLarge = 0, tSmall = 0, tAccount = 0;
-
-    state.ledgerData.forEach(rec => {
-        const c1L = parseCleanNumber(rec.comp1_large || rec.comp1Large || 0);
-        const c1S = parseCleanNumber(rec.comp1_small || rec.comp1Small || 0);
-        const c1A = parseCleanNumber(rec.comp1_account || rec.comp1Account || 0);
-        const c2L = parseCleanNumber(rec.comp2_large || rec.comp2Large || 0);
-        const c2S = parseCleanNumber(rec.comp2_small || rec.comp2Small || 0);
-        const c2A = parseCleanNumber(rec.comp2_account || rec.comp2Account || 0);
-
-        // Overall Totals Build-up
-        oC1Large += c1L;
-        oC1Small += c1S;
-        oC1Account += c1A;
-        oC2Large += c2L;
-        oC2Small += c2S;
-        oC2Account += c2A;
-
-        // Today's Totals Build-up
-        if (rec.date === todayISO) {
-            tLarge += (c1L + c2L);
-            tSmall += (c1S + c2S);
-            tAccount += (c1A + c2A);
-        }
-    });
-
-    // === COMP 1 CARDS INJECTION ===
-    DOM.cardComp1Large.innerText = formatPKR(oC1Large);
-    DOM.cardComp1Small.innerText = formatPKR(oC1Small);
-    DOM.cardComp1TotalCash.innerText = formatPKR(oC1Large + oC1Small);
-    DOM.cardComp1Account.innerText = formatPKR(oC1Account);
-    DOM.cardComp1TotalWithAccount.innerText = formatPKR(oC1Large + oC1Small + oC1Account);
-
-    // === COMP 2 CARDS INJECTION ===
-    DOM.cardComp2Large.innerText = formatPKR(oC2Large);
-    DOM.cardComp2Small.innerText = formatPKR(oC2Small);
-    DOM.cardComp2TotalCash.innerText = formatPKR(oC2Large + oC2Small);
-    DOM.cardComp2Account.innerText = formatPKR(oC2Account);
-    DOM.cardComp2TotalWithAccount.innerText = formatPKR(oC2Large + oC2Small + oC2Account);
-
-    // === TODAY'S TOTAL CARDS INJECTION ===
-    DOM.cardTodayLarge.innerText = formatPKR(tLarge);
-    DOM.cardTodaySmall.innerText = formatPKR(tSmall);
-    DOM.cardTodayTotalCash.innerText = formatPKR(tLarge + tSmall);
-    DOM.cardTodayAccount.innerText = formatPKR(tAccount);
-    DOM.cardTodayTotalWithAccount.innerText = formatPKR(tLarge + tSmall + tAccount);
-
-    // === BAQI PURANE ELEMENTS DECENTLY RUNNING ===
-    DOM.cardMonthlyCash.innerText = formatPKR(monthlyTotalCashSum);
-    DOM.cardMonthlyLabel.innerText = `${new Date().toLocaleString('en-US', { month: 'long' })} Total`;
-
-        // Calculate average daily balances
-        const activeDaysCount = uniqueDatesWithEntries.size || 1;
-        const averageCashPerDay = overallGrandOverallSum / activeDaysCount;
-        DOM.cardAverageCash.innerText = formatPKR(averageCashPerDay);
-
-        // --- 5. Generate Graphics Allocations profile percentages ---
-        // --- 5. Generate Graphics Allocations profile percentages ---
-        // Pehle Account totals nikalne honge (agar ledgerData mein comp1_account aur comp2_account exist karte hain)
-        const totalComp1Account = state.ledgerData.reduce((acc, rec) => acc + parseCleanNumber(rec.comp1_account), 0);
-        const totalComp2Account = state.ledgerData.reduce((acc, rec) => acc + parseCleanNumber(rec.comp2_account), 0);
-
-        const grandTotal = totals.overall.c1L + totals.overall.c1S + totalComp1Account + totals.overall.c2L + totals.overall.c2S + totalComp2Account;
-
-        if (grandTotal > 0) {
-            if (DOM.barComp1Large) DOM.barComp1Large.style.width = `${((totals.overall.c1L / grandTotal) * 100).toFixed(1)}%`;
-            if (DOM.pctComp1Large) DOM.pctComp1Large.textContent = `${((totals.overall.c1L / grandTotal) * 100).toFixed(1)}%`;
-
-            if (DOM.barComp1Small) DOM.barComp1Small.style.width = `${((totals.overall.c1S / grandTotal) * 100).toFixed(1)}%`;
-            if (DOM.pctComp1Small) DOM.pctComp1Small.textContent = `${((totals.overall.c1S / grandTotal) * 100).toFixed(1)}%`;
-
-            if (DOM.barComp1Account) DOM.barComp1Account.style.width = `${((totalComp1Account / grandTotal) * 100).toFixed(1)}%`;
-            if (DOM.pctComp1Account) DOM.pctComp1Account.textContent = `${((totalComp1Account / grandTotal) * 100).toFixed(1)}%`;
-
-            if (DOM.barComp2Large) DOM.barComp2Large.style.width = `${((totals.overall.c2L / grandTotal) * 100).toFixed(1)}%`;
-            if (DOM.pctComp2Large) DOM.pctComp2Large.textContent = `${((totals.overall.c2L / grandTotal) * 100).toFixed(1)}%`;
-
-            if (DOM.barComp2Small) DOM.barComp2Small.style.width = `${((totals.overall.c2S / grandTotal) * 100).toFixed(1)}%`;
-            if (DOM.pctComp2Small) DOM.pctComp2Small.textContent = `${((totals.overall.c2S / grandTotal) * 100).toFixed(1)}%`;
-
-            if (DOM.barComp2Account) DOM.barComp2Account.style.width = `${((totalComp2Account / grandTotal) * 100).toFixed(1)}%`;
-            if (DOM.pctComp2Account) DOM.pctComp2Account.textContent = `${((totalComp2Account / grandTotal) * 100).toFixed(1)}%`;
-        } else {
-            // Reset to 0 if total is empty
-            [DOM.barComp1Large, DOM.barComp1Small, DOM.barComp1Account, DOM.barComp2Large, DOM.barComp2Small, DOM.barComp2Account].forEach(b => { if(b) b.style.width = '0%'; });
-            [DOM.pctComp1Large, DOM.pctComp1Small, DOM.pctComp1Account, DOM.pctComp2Large, DOM.pctComp2Small, DOM.pctComp2Account].forEach(p => { if(p) p.textContent = '0%'; });
-        }
-        
-        // --- 6. Recent Action Logs Updates ---
-        updateRecentEntriesLogList();
-
-        // --- 7. Refresh Reporting Visual State ---
-        generateCurrentReportStatement();
-    }
-
-    /**
-     * Renders a short preview of the latest ledger transactions on the dashboard
-     */
-    function updateRecentEntriesLogList() {
-        DOM.recentLogsContainer.innerHTML = '';
-        
-        // Sort the data arrays descending to grab latest entries
-        const sorted = [...state.ledgerData].sort((a, b) => new Date(b.date) - new Date(a.date));
-        const sliced = sorted.slice(0, 5);
-
-        if (sliced.length === 0) {
-            DOM.recentLogsContainer.innerHTML = `<li class="log-empty-state">No entries registered in database yet</li>`;
-            return;
-        }
-
-        sliced.forEach(item => {
-            const li = document.createElement('li');
-            const total = parseCleanNumber(item.comp1_large) + parseCleanNumber(item.comp1_small) + parseCleanNumber(item.comp2_large) + parseCleanNumber(item.comp2_small);
-            li.innerHTML = `
-                <div>
-                    <strong>${item.date}</strong> - ${item.remarks || 'No remarks recorded'}
-                </div>
-                <div class="log-time font-mono">
-                    ${formatPKR(total)}
-                </div>
-            `;
-            DOM.recentLogsContainer.appendChild(li);
-        });
-    }
-
-    /**
-     * Displays admin system security logs in the panel
-     */
-    function renderLoginTraceLogs() {
-        DOM.historyLogBody.innerHTML = '';
-        
-        if (state.loginHistory.length === 0) {
-            DOM.historyLogBody.innerHTML = `
-                <tr>
-                    <td colspan="5" class="text-center text-muted">No operational traces logged.</td>
-                </tr>
-            `;
-            return;
-        }
-
-        state.loginHistory.forEach(log => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td class="text-bold">${log.date}</td>
-                <td class="font-mono">${log.time}</td>
-                <td>${log.device}</td>
-                <td><span class="badge ${log.role.includes('Admin') ? 'badge-admin' : 'badge-viewer'}">${log.role}</span></td>
-                <td><span class="badge-accent">${log.status}</span></td>
-            `;
-            DOM.historyLogBody.appendChild(tr);
-        });
-    }
-
-    /**
-     * Generates on-screen summaries in the Reporting Panel according to set dropdowns
-     */
-    function generateCurrentReportStatement() {
-        const month = DOM.reportMonthFilter.value;
-        const year = DOM.reportYearFilter.value;
-
-        // Render targets updates
-        const monthsNames = [
-            "January", "February", "March", "April", "May", "June",
-            "July", "August", "September", "October", "November", "December"
-        ];
-        DOM.reportPeriodText.innerText = `Statement: ${monthsNames[parseInt(month) - 1]} ${year}`;
-
-        // Compute balances matches
-        let comp1Sum = 0;
-        let comp2Sum = 0;
-        let miniRowsHtml = '';
-        let matchedIndex = 1;
-
-        // Sort ascending for ledger reports
-        const matchedEntries = state.ledgerData.filter(record => {
-            if (record.date) {
-                const parts = record.date.split('-');
-                return parts[0] === year && parts[1] === month;
-            }
-            return false;
-        }).sort((a, b) => new Date(a.date) - new Date(b.date));
-
-        if (matchedEntries.length === 0) {
-            DOM.reportSumComp1.innerText = "Rs. 0.00";
-            DOM.reportSumComp2.innerText = "Rs. 0.00";
-            DOM.reportSumGrand.innerText = "Rs. 0.00";
-            DOM.reportMiniRows.innerHTML = `
-                <tr>
-                    <td colspan="6" class="text-center text-muted">No ledger registers match current statement parameters.</td>
-                </tr>
-            `;
-            return;
-        }
-
-        matchedEntries.forEach(item => {
-            const c1Total = parseCleanNumber(item.comp1_large) + parseCleanNumber(item.comp1_small);
-            const c2Total = parseCleanNumber(item.comp2_large) + parseCleanNumber(item.comp2_small);
-            const grandRowTotal = c1Total + c2Total;
-
-            comp1Sum += c1Total;
-            comp2Sum += c2Total;
-
-            miniRowsHtml += `
-                <tr>
-                    <td>${matchedIndex++}</td>
-                    <td class="text-bold">${item.date}</td>
-                    <td>${item.day}</td>
-                    <td class="text-right font-mono">${formatPKR(c1Total).replace("Rs.", "")}</td>
-                    <td class="text-right font-mono">${formatPKR(c2Total).replace("Rs.", "")}</td>
-                    <td class="text-right font-mono text-bold">${formatPKR(grandRowTotal).replace("Rs.", "")}</td>
-                </tr>
-            `;
-        });
-
-        DOM.reportSumComp1.innerText = formatPKR(comp1Sum);
-        DOM.reportSumComp2.innerText = formatPKR(comp2Sum);
-        DOM.reportSumGrand.innerText = formatPKR(comp1Sum + comp2Sum);
-        DOM.reportMiniRows.innerHTML = miniRowsHtml;
-    }
-
-    // ==========================================
-    // PERMISSIONS GATEKEEPER & ACCESS PATTERNS
-    // ==========================================
-
-    /**
-     * Toggles visibility of editing elements based on current roles (Admin vs. Viewer)
-     */
-    function applyRoleAccessPermissions() {
-        if (state.role === 'admin') {
-            DOM.statusBadge.className = 'badge badge-admin';
-            DOM.statusBadge.innerHTML = '<i class="fa-solid fa-user-shield"></i> Admin Access';
-            
-            // Unlocked state elements
-            DOM.btnAddEntry.removeAttribute('disabled');
-            DOM.btnLockEdit.classList.remove('hide');
-            
-            // Enable editing fields in structural configurations inside Admin Panel
-            DOM.adminViewerPasscode.removeAttribute('disabled');
-            DOM.adminViewerPasscode.value = state.passcodeViewer;
-            DOM.adminAdminPasscode.removeAttribute('disabled');
-            DOM.adminAdminPasscode.value = state.passcodeAdmin;
-            
-            DOM.btnUpdatePasscodes.removeAttribute('disabled');
-            DOM.btnBackupLocal.removeAttribute('disabled');
-            DOM.fileRestoreInput.removeAttribute('disabled');
-            DOM.btnTriggerRestore.removeAttribute('disabled');
-            DOM.btnFactoryReset.removeAttribute('disabled');
-            DOM.btnCloseDay.removeAttribute('disabled');
-            DOM.btnClearHistory.removeAttribute('disabled');
-
-            // Expose table modifications action columns if admin mode is engaged
-            document.querySelectorAll('.edit-elements-only').forEach(el => el.classList.remove('hide'));
-        } else {
-            DOM.statusBadge.className = 'badge badge-viewer';
-            DOM.statusBadge.innerHTML = '<i class="fa-solid fa-eye"></i> Viewer Mode';
-            
-            // Locked constraints inside application
-            DOM.btnAddEntry.setAttribute('disabled', 'true');
-            DOM.btnLockEdit.classList.add('hide');
-            
-            // Disabled admin configuration controls
-            DOM.adminViewerPasscode.setAttribute('disabled', 'true');
-            DOM.adminViewerPasscode.value = '••••';
-            DOM.adminAdminPasscode.setAttribute('disabled', 'true');
-            DOM.adminAdminPasscode.value = '••••';
-            
-            DOM.btnUpdatePasscodes.setAttribute('disabled', 'true');
-            DOM.btnBackupLocal.setAttribute('disabled', 'true');
-            DOM.fileRestoreInput.setAttribute('disabled', 'true');
-            DOM.btnTriggerRestore.setAttribute('disabled', 'true');
-            DOM.btnFactoryReset.setAttribute('disabled', 'true');
-            DOM.btnCloseDay.setAttribute('disabled', 'true');
-            DOM.btnClearHistory.setAttribute('disabled', 'true');
-
-            // Hide action buttons in ledger table
-            document.querySelectorAll('.edit-elements-only').forEach(el => el.classList.add('hide'));
-        }
-    }
-
-    /**
-     * Upgrades session role permissions if valid security credentials are validated
-     */
-    function attemptElevateToAdmin(passcodeValue) {
-        if (passcodeValue === state.passcodeAdmin) {
-            state.role = 'admin';
-            writeFootprintLog("Escalated permissions to Administration role", 'admin');
-            applyRoleAccessPermissions();
-            renderLedgerTable();
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * Locks down permissions back to standard viewer status instantly
-     */
-    function lockDownSessionToViewer() {
-        state.role = 'viewer';
-        writeFootprintLog("Demoted current session privileges back to standard Viewer mode", 'viewer');
-        applyRoleAccessPermissions();
-        renderLedgerTable();
-    }
-
-    // ==========================================
-    // ACTION CONTROLLERS & WORKFLOW HANDLERS
-    // ==========================================
-
-    /**
-     * Direct navigation menu control panel transitions
-     */
-    function switchActiveTabPanel(targetPanelId) {
-        // Guard access: If user clicks on Admin panel but is only a viewer, prompter activates
-        if (targetPanelId === 'tab-admin' && state.role !== 'admin') {
-            DOM.modalPasscodeField.value = '';
-            DOM.modalErrorText.classList.add('hide');
-            DOM.passcodeModal.classList.remove('hide');
-            DOM.modalPasscodeField.focus();
-            return;
-        }
-
-        DOM.navTabs.forEach(tab => {
-            if (tab.getAttribute('data-target') === targetPanelId) {
-                tab.classList.add('active');
-            } else {
-                tab.classList.remove('active');
-            }
-        });
-
-        DOM.panels.forEach(panel => {
-            if (panel.id === targetPanelId) {
-                panel.classList.add('active');
-            } else {
-                panel.classList.remove('active');
-            }
-        });
-    }
-
-    /**
-     * Generates and appends a blank cash ledger structure ready for inputs
-     */
-    function executeInsertNewLedgerRow() {
-        if (state.role !== 'admin') return;
-
-        const newRowId = `row-${Date.now()}`;
-        const defaultDate = getFormattedDateISO();
-        
-        // Block insertion if targeted date is closed already
-        if (state.closedDays.includes(defaultDate)) {
-            alert(`Entries for today (${defaultDate}) are closed under daily closing protocols. Reopen via the admin panel first.`);
-            return;
-        }
-
-        const newRecord = {
-            id: newRowId,
-            date: defaultDate,
-            day: resolveDayName(defaultDate),
-            comp1_large: 0.00,
-            comp1_small: 0.00,
-            comp2_large: 0.00,
-            comp2_small: 0.00,
-            remarks: '',
-            locked: false
-        };
-
-        state.ledgerData.unshift(newRecord);
-        commitLedgerToDatabase();
-        renderLedgerTable();
-    }
-
-    /**
-     * Prompts a styled modal window demanding user confirmation before destructive executions
-     */
-    function triggerConfirmationDialog(title, message, executionCallback) {
-        DOM.confirmModalTitle.innerText = title;
-        DOM.confirmModalMessage.innerText = message;
-        confirmationCallback = executionCallback;
-        DOM.confirmModal.classList.remove('hide');
-    }
-
-    // ==========================================
-    // DATA EXPORT & DISASTER SYSTEM CORES
-    // ==========================================
-
-    /**
-     * Creates a download link with complete JSON package representations of stored cash states
-     */
-    function executeLocalDataBackupDownload() {
-        if (state.role !== 'admin') return;
-
-        const dataDump = {
-            version: "2026.1",
-            exportTimestamp: new Date().toISOString(),
-            ledgerData: state.ledgerData,
-            closedDays: state.closedDays,
-            systemCredentials: {
-                viewer: state.passcodeViewer,
-                admin: state.passcodeAdmin
-            }
-        };
-
-        const jsonString = JSON.stringify(dataDump, null, 2);
-        const blob = new Blob([jsonString], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `JCM_Backup_${getFormattedDateISO()}_${Date.now()}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-
-        writeFootprintLog("Database Local JSON Backup file exported successfully.", 'admin');
-    }
-
-    /**
-     * Imports structured JSON files to override the database elements
-     */
-    function handleBackupFileRestore(fileEvent) {
-        const file = fileEvent.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = function (e) {
-            try {
-                const parsed = JSON.parse(e.target.result);
+    },
+
+    // INTERACTION INITIALIZATION HANDLERS
+    ui: {
+        DOM: {},
+
+        cacheDOMSelectors() {
+            this.DOM = {
+                // Security Framework Panels
+                webAuthOverlay: document.getElementById("website-auth-overlay"),
+                webPinInput: document.getElementById("website-pin-input"),
+                webAuthError: document.getElementById("website-auth-error"),
+                webAuthSubmit: document.getElementById("website-auth-submit-btn"),
+                appContainer: document.getElementById("app-container"),
+                accessBadge: document.getElementById("access-badge"),
+                accessStatusText: document.getElementById("access-status-text"),
                 
-                // Security compliance structural check on imported object properties
-                if (!parsed.ledgerData || !Array.isArray(parsed.ledgerData)) {
-                    throw new Error("Invalid structure format detected: ledgerData is missing.");
-                }
-
-                triggerConfirmationDialog(
-                    "Confirm Ledger Recovery?",
-                    "Are you absolutely sure you want to restore this file? It will OVERWRITE all current entries instantly.",
-                    () => {
-                        state.ledgerData = parsed.ledgerData;
-                        
-                        if (parsed.closedDays && Array.isArray(parsed.closedDays)) {
-                            state.closedDays = parsed.closedDays;
-                            localStorage.setItem('jcm_closed_days', JSON.stringify(state.closedDays));
-                        }
-
-                        if (parsed.systemCredentials) {
-                            if (parsed.systemCredentials.viewer) {
-                                state.passcodeViewer = parsed.systemCredentials.viewer;
-                                localStorage.setItem('jcm_passcode_viewer', state.passcodeViewer);
-                            }
-                            if (parsed.systemCredentials.admin) {
-                                state.passcodeAdmin = parsed.systemCredentials.admin;
-                                localStorage.setItem('jcm_passcode_admin', state.passcodeAdmin);
-                            }
-                        }
-
-                        commitLedgerToDatabase();
-                        renderLedgerTable();
-                        writeFootprintLog("Ledger database recovered and restored successfully from backup file.", 'admin');
-                        alert("Database configuration restored successfully.");
-                    }
-                );
-            } catch (err) {
-                alert("Error: The backup file is invalid or corrupted. details: " + err.message);
-            }
-        };
-        reader.readAsText(file);
-    }
-
-    /**
-     * Erases all operational memory and databases resetting system defaults
-     */
-    function executeFactoryResetPurge() {
-        triggerConfirmationDialog(
-            "PURGE SYSTEM RECORDS AND DATABASES?",
-            "WARNING! You are about to initiate a structural hard factory reset. All cash records, closed days logs, credentials and sync channels will be deleted permanently.",
-            () => {
-                localStorage.clear();
+                // Clock Structures
+                liveDate: document.getElementById("live-date"),
+                liveTime: document.getElementById("live-time"),
                 
-                state.role = null;
-                state.passcodeViewer = DEFAULT_PASS_VIEWER;
-                state.passcodeAdmin = DEFAULT_PASS_ADMIN;
-                state.ledgerData = [];
-                state.closedDays = [];
-                state.loginHistory = [];
+                // Navigation Links Elements
+                navLinks: document.querySelectorAll(".nav-btn"),
+                navBackup: document.getElementById("nav-btn-backup"),
+                navRestore: document.getElementById("nav-btn-restore"),
+                themeToggle: document.getElementById("theme-toggle-btn"),
+                logoutBtn: document.getElementById("logout-btn"),
                 
-                initDatabaseState();
+                // General Metric Dashboard Links
+                dashTodayEntries: document.getElementById("dash-today-entries-count"),
+                dashC1Large: document.getElementById("dash-c1-large"),
+                dashC1Small: document.getElementById("dash-c1-small"),
+                dashC1TotalCash: document.getElementById("dash-c1-total-cash"),
+                dashC1TotalAccount: document.getElementById("dash-c1-total-account"),
+                dashC2Large: document.getElementById("dash-c2-large"),
+                dashC2Small: document.getElementById("dash-c2-small"),
+                dashC2TotalCash: document.getElementById("dash-c2-total-cash"),
+                dashC2TotalAccount: document.getElementById("dash-c2-total-account"),
+                dashGrandTodayCash: document.getElementById("dash-grand-today-cash"),
+                dashGrandTodayAccount: document.getElementById("dash-grand-today-account"),
                 
-                // Force layout reload back to authentication gatekeeper
+                // Operational Cash Ledgers Elements
+                adminUnlockBtn: document.getElementById("admin-unlock-btn"),
+                adminLockBtn: document.getElementById("admin-lock-btn"),
+                adminAuthModal: document.getElementById("admin-auth-modal"),
+                adminPinInput: document.getElementById("admin-pin-input"),
+                adminAuthError: document.getElementById("admin-auth-error"),
+                adminAuthCancel: document.getElementById("admin-auth-cancel"),
+                adminAuthSubmit: document.getElementById("admin-auth-submit"),
+                ledgerRowsContainer: document.getElementById("ledger-rows-container"),
+                tableAddRowBtn: document.getElementById("table-add-row-btn"),
+                adminActionElements: document.querySelectorAll(".admin-action-element"),
+                adminActionCells: document.querySelectorAll(".col-actions"),
+                
+                // Table Accounting Today Section Elements
+                totTC1Large: document.getElementById("tot-t-c1-large"),
+                totTC1Small: document.getElementById("tot-t-c1-small"),
+                totTC1Account: document.getElementById("tot-t-c1-account"),
+                totTC1Cash: document.getElementById("tot-t-c1-cash"),
+                totTC1WithAccount: document.getElementById("tot-t-c1-with-account"),
+                totTC2Large: document.getElementById("tot-t-c2-large"),
+                totTC2Small: document.getElementById("tot-t-c2-small"),
+                totTC2Account: document.getElementById("tot-t-c2-account"),
+                totTC2Cash: document.getElementById("tot-t-c2-cash"),
+                totTC2WithAccount: document.getElementById("tot-t-c2-with-account"),
+                totTGrandCash: document.getElementById("tot-t-grand-cash"),
+                totTGrandWithAccount: document.getElementById("tot-t-grand-with-account"),
+
+                // Table Accounting Overall Section Elements
+                totOC1Large: document.getElementById("tot-o-c1-large"),
+                totOC1Small: document.getElementById("tot-o-c1-small"),
+                totOC1Account: document.getElementById("tot-o-c1-account"),
+                totOC1Cash: document.getElementById("tot-o-c1-cash"),
+                totOC1WithAccount: document.getElementById("tot-o-c1-with-account"),
+                totOC2Large: document.getElementById("tot-o-c2-large"),
+                totOC2Small: document.getElementById("tot-o-c2-small"),
+                totOC2Account: document.getElementById("tot-o-c2-account"),
+                totOC2Cash: document.getElementById("tot-o-c2-cash"),
+                totOC2WithAccount: document.getElementById("tot-o-c2-with-account"),
+                totOGrandCash: document.getElementById("tot-o-grand-cash"),
+                totOGrandWithAccount: document.getElementById("tot-o-grand-with-account"),
+                
+                // Reporting Interfaces Parameters
+                reportPrintBtn: document.getElementById("report-print-btn"),
+                reportCsvBtn: document.getElementById("report-csv-btn"),
+                filterDateInput: document.getElementById("filter-date-input"),
+                filterMonthInput: document.getElementById("filter-month-input"),
+                filterYearInput: document.getElementById("filter-year-input"),
+                filterClearBtn: document.getElementById("filter-clear-btn"),
+                reportRowsContainer: document.getElementById("report-rows-container"),
+                monthlySummaryCardsGrid: document.getElementById("monthly-summary-cards-grid"),
+                
+                // Administrative Control Systems Parameters
+                adminRestrictedBanner: document.getElementById("admin-restricted-view-banner"),
+                adminWebPinInput: document.getElementById("admin-set-web-pin"),
+                adminSaveWebPinBtn: document.getElementById("btn-save-web-pin"),
+                adminAdmPinInput: document.getElementById("admin-set-adm-pin"),
+                adminSaveAdmPinBtn: document.getElementById("btn-save-adm-pin"),
+                firebaseGoogleLoginBtn: document.getElementById("firebase-google-login-btn"),
+                googleUserProfileInfo: document.getElementById("google-user-profile-info"),
+                googleUserAvatar: document.getElementById("google-user-avatar"),
+                googleUserName: document.getElementById("google-user-name"),
+                googleUserEmail: document.getElementById("google-user-email"),
+                cloudStatusBadge: document.getElementById("cloud-status-badge"),
+                lblLastBackupTimestamp: document.getElementById("lbl-last-backup-timestamp"),
+                lblBackupStatusText: document.getElementById("lbl-backup-status-text"),
+                adminManualBackupBtn: document.getElementById("admin-btn-manual-backup"),
+                adminManualRestoreBtn: document.getElementById("admin-btn-manual-restore"),
+                adminExportRawBtn: document.getElementById("admin-btn-export-raw"),
+                adminHardResetBtn: document.getElementById("admin-btn-hard-reset"),
+                dayClosingStatusBadge: document.getElementById("day-closing-status-badge"),
+                adminCloseDayBtn: document.getElementById("admin-btn-close-day"),
+                adminReopenDayBtn: document.getElementById("admin-btn-reopen-day"),
+                loginHistoryRowsContainer: document.getElementById("login-history-rows-container"),
+                
+                // Footer Diagnostics References
+                footerConnectionDot: document.getElementById("footer-connection-dot"),
+                footerConnectionText: document.getElementById("footer-connection-text")
+            };
+        },
+
+        initializeEvents() {
+            // Level 1 Authorization Events Setup
+            this.DOM.webPinInput.addEventListener("keypress", (e) => { if (e.key === "Enter") this.processLevel1Authentication(); });
+            this.DOM.webAuthSubmit.addEventListener("click", () => this.processLevel1Authentication());
+            
+            // Tab View Operations System Setup
+            this.DOM.navLinks.forEach(btn => {
+                btn.addEventListener("click", (e) => {
+                    const TargetSectionId = btn.getAttribute("data-target");
+                    this.switchTabContext(TargetSectionId);
+                });
+            });
+
+            // Level 2 Admin Elevation Prompts Setup
+            this.DOM.adminUnlockBtn.addEventListener("click", () => {
+                this.DOM.adminAuthModal.classList.remove("hidden");
+                this.DOM.adminPinInput.value = "";
+                this.DOM.adminAuthError.style.display = "none";
+                this.DOM.adminPinInput.focus();
+            });
+            this.DOM.adminLockBtn.addEventListener("click", () => {
+                window.AppEngine.state.accessLevel = 1;
+                this.applyAccessStateSecurityMatrix();
+            });
+            this.DOM.adminAuthCancel.addEventListener("click", () => this.DOM.adminAuthModal.classList.add("hidden"));
+            this.DOM.adminPinInput.addEventListener("keypress", (e) => { if (e.key === "Enter") this.processLevel2Authentication(); });
+            this.DOM.adminAuthSubmit.addEventListener("click", () => this.processLevel2Authentication());
+            
+            // Core Data Modification Actions Triggers
+            this.DOM.tableAddRowBtn.addEventListener("click", () => this.appendNewRecordRowData());
+            
+            // Live Filtering Execution Listeners Setup
+            this.DOM.filterDateInput.addEventListener("input", () => this.renderReportsViewsPipeline());
+            this.DOM.filterMonthInput.addEventListener("change", () => this.renderReportsViewsPipeline());
+            this.DOM.filterYearInput.addEventListener("input", () => this.renderReportsViewsPipeline());
+            this.DOM.filterClearBtn.addEventListener("click", () => {
+                this.DOM.filterDateInput.value = "";
+                this.DOM.filterMonthInput.value = "";
+                this.DOM.filterYearInput.value = "";
+                this.renderReportsViewsPipeline();
+            });
+
+            // Theme Custom Alteration Trigger Event
+            this.DOM.themeToggle.addEventListener("click", () => this.toggleApplicationThemeSystem());
+            
+            // Administrative PIN Enforcement Alterations
+            this.DOM.adminSaveWebPinBtn.addEventListener("click", () => this.alterSystemAccessPinCode(1));
+            this.DOM.adminSaveAdmPinBtn.addEventListener("click", () => this.alterSystemAccessPinCode(2));
+
+            // Hard Storage Purge Configurations Trigger
+            this.DOM.adminHardResetBtn.addEventListener("click", () => this.executeFactoryClearDataRoutine());
+            this.DOM.adminExportRawBtn.addEventListener("click", () => this.triggerBackupJSONDownloadStream());
+            
+            // End Day Closing Actions Pipeline Triggers
+            this.DOM.adminCloseDayBtn.addEventListener("click", () => this.processCloseDayExecution());
+            this.DOM.adminReopenDayBtn.addEventListener("click", () => this.processReopenDayExecution());
+            
+            // Top Level Actions Integration Pipelines
+            this.DOM.navBackup.addEventListener("click", () => this.triggerManualCloudTransaction("backup"));
+            this.DOM.adminManualBackupBtn.addEventListener("click", () => this.triggerManualCloudTransaction("backup"));
+            this.DOM.navRestore.addEventListener("click", () => this.triggerManualCloudTransaction("restore"));
+            this.DOM.adminManualRestoreBtn.addEventListener("click", () => this.triggerManualCloudTransaction("restore"));
+            
+            // Document Extraction Printing & Export Engines
+            this.DOM.reportPrintBtn.addEventListener("click", () => window.print());
+            this.DOM.reportCsvBtn.addEventListener("click", () => this.generateStructuredCSVFileDownload());
+
+            this.DOM.logoutBtn.addEventListener("click", () => {
                 window.location.reload();
-            }
-        );
-    }
-
-    /**
-     * Executes localized printed report page compilations
-     */
-    function executeReportPrintProtocol() {
-        window.print();
-    }
-
-    /**
-     * Converts statement metrics matching selection parameters cleanly to a CSV spreadsheet
-     */
-    function executeExportStatementCSV() {
-        const month = DOM.reportMonthFilter.value;
-        const year = DOM.reportYearFilter.value;
-
-        const matchedEntries = state.ledgerData.filter(record => {
-            if (record.date) {
-                const parts = record.date.split('-');
-                return parts[0] === year && parts[1] === month;
-            }
-            return false;
-        }).sort((a, b) => new Date(a.date) - new Date(b.date));
-
-        if (matchedEntries.length === 0) {
-            alert("This statement criteria contains 0 ledger outputs. Select matching fields first.");
-            return;
-        }
-
-        let csvContent = "data:text/csv;charset=utf-8,";
-        
-        // Table CSV header structure
-        csvContent += "S.No,Date,Day,Comp 1 Large Cash,Comp 1 Small Cash,Comp 1 Sub Total,Comp 2 Large Cash,Comp 2 Small Cash,Comp 2 Sub Total,Daily Grand Total,Remarks\r\n";
-
-        matchedEntries.forEach((item, index) => {
-            const c1l = parseCleanNumber(item.comp1_large);
-            const c1s = parseCleanNumber(item.comp1_small);
-            const c1t = c1l + c1s;
-
-            const c2l = parseCleanNumber(item.comp2_large);
-            const c2s = parseCleanNumber(item.comp2_small);
-            const c2t = c2l + c2s;
-
-            const grand = c1t + c2t;
-            const rem = (item.remarks || "").replace(/,/g, " ");
-
-            csvContent += `${index + 1},${item.date},${item.day},${c1l},${c1s},${c1t},${c2l},${c2s},${c2t},${grand},${rem}\r\n`;
-        });
-
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `JCM_Statement_${year}_${month}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        writeFootprintLog(`Exported transaction monthly CSV report for period ${month}/${year}`, 'admin');
-    }
-
-    /**
-     * Closes operations on the current Date, archiving and locking matching entries
-     */
-    function executeDayClosingProtocol() {
-        if (state.role !== 'admin') return;
-
-        const dateToClose = getFormattedDateISO();
-
-        if (state.closedDays.includes(dateToClose)) {
-            // Already sealed, so admin protocol will toggle to reopen it
-            triggerConfirmationDialog(
-                "REOPEN SEED LEDGER ENTRIES?",
-                `Do you want to REOPEN the sealed ledger entries registered for date: ${dateToClose}? This enables modification permissions.`,
-                () => {
-                    state.closedDays = state.closedDays.filter(d => d !== dateToClose);
-                    localStorage.setItem('jcm_closed_days', JSON.stringify(state.closedDays));
-                    
-                    state.ledgerData.forEach(item => {
-                        if (item.date === dateToClose) {
-                            item.locked = false;
-                        }
-                    });
-
-                    commitLedgerToDatabase();
-                    renderLedgerTable();
-                    writeFootprintLog(`Reopened ledger database operations for closed date: ${dateToClose}`, 'admin');
-                    alert(`Date ledger balance sheets for ${dateToClose} are now unlocked.`);
-                }
-            );
-        } else {
-            // Close operations
-            triggerConfirmationDialog(
-                "EXECUTE DAILY CLOSING PROTOCOL?",
-                `Warning! Sealing operations for date: ${dateToClose} prevents standard editing modules from writing changes unless authorized administrators reopen ledger registers. Do you want to proceed?`,
-                () => {
-                    state.closedDays.push(dateToClose);
-                    localStorage.setItem('jcm_closed_days', JSON.stringify(state.closedDays));
-                    
-                    state.ledgerData.forEach(item => {
-                        if (item.date === dateToClose) {
-                            item.locked = true;
-                        }
-                    });
-
-                    commitLedgerToDatabase();
-                    renderLedgerTable();
-                    writeFootprintLog(`Locked and sealed daily operations register for date: ${dateToClose}`, 'admin');
-                    alert(`Daily closing protocol finalized. Balance sheets for ${dateToClose} are now locked.`);
-                }
-            );
-        }
-    }
-
-    // ==========================================
-    // SYSTEM INITIALIZATION & EVENTS BINDING
-    // ==========================================
-
-    /**
-     * Binds general system layout elements and interaction events
-     */
-    function bindInterfaceCoreEvents() {
-        // --- 1. System Login Auth Triggers ---
-        DOM.btnAuthenticate.addEventListener('click', () => {
-            const pass = DOM.passcodeInput.value;
-            if (pass === state.passcodeAdmin) {
-                state.role = 'admin';
-                DOM.gatekeeperOverlay.classList.add('hide');
-                DOM.appContainer.classList.remove('hide');
-                writeFootprintLog("Logged into secure management portal", 'admin');
-                applyRoleAccessPermissions();
-                renderLedgerTable();
-            } else if (pass === state.passcodeViewer) {
-                state.role = 'viewer';
-                DOM.gatekeeperOverlay.classList.add('hide');
-                DOM.appContainer.classList.remove('hide');
-                writeFootprintLog("Logged into secure management portal", 'viewer');
-                applyRoleAccessPermissions();
-                renderLedgerTable();
-            } else {
-                DOM.gatekeeperError.classList.remove('hide');
-                DOM.passcodeInput.value = '';
-                DOM.passcodeInput.focus();
-            }
-        });
-
-        DOM.passcodeInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                DOM.btnAuthenticate.click();
-            }
-        });
-
-        DOM.toggleGatekeeperPasscode.addEventListener('click', () => {
-            const type = DOM.passcodeInput.getAttribute('type') === 'password' ? 'text' : 'password';
-            DOM.passcodeInput.setAttribute('type', type);
-            DOM.toggleGatekeeperPasscode.querySelector('i').classList.toggle('fa-eye');
-            DOM.toggleGatekeeperPasscode.querySelector('i').classList.toggle('fa-eye-slash');
-        });
-
-        // --- 2. Perm elevate Modal verification actions ---
-        DOM.btnModalVerify.addEventListener('click', () => {
-            const pass = DOM.modalPasscodeField.value;
-            if (attemptElevateToAdmin(pass)) {
-                DOM.passcodeModal.classList.add('hide');
-                switchActiveTabPanel('tab-admin');
-            } else {
-                DOM.modalErrorText.classList.remove('hide');
-                DOM.modalPasscodeField.value = '';
-                DOM.modalPasscodeField.focus();
-            }
-        });
-
-        DOM.modalPasscodeField.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') DOM.btnModalVerify.click();
-        });
-
-        document.querySelectorAll('.modal-dismiss-trigger').forEach(btn => {
-            btn.addEventListener('click', () => {
-                DOM.passcodeModal.classList.add('hide');
-                DOM.confirmModal.classList.add('hide');
             });
-        });
+        },
 
-        DOM.btnConfirmAction.addEventListener('click', () => {
-            if (confirmationCallback) {
-                confirmationCallback();
-                confirmationCallback = null;
-            }
-            DOM.confirmModal.classList.add('hide');
-        });
+        // CLOCK LIFE PIPELINE INTERACTION ENGINE
+        startClockPipelineLoop() {
+            const executeClockUpdate = () => {
+                const currentMoment = new Date();
+                
+                // Format date cleanly: YYYY-MM-DD
+                const year = currentMoment.getFullYear();
+                const month = String(currentMoment.getMonth() + 1).padStart(2, "0");
+                const day = String(currentMoment.getDate()).padStart(2, "0");
+                this.DOM.liveDate.innerText = `${year}-${month}-${day}`;
+                
+                // Format time: HH:MM:SS AM/PM
+                this.DOM.liveTime.innerText = currentMoment.toLocaleTimeString("en-US", {
+                    hour12: true,
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit"
+                });
+            };
+            executeClockUpdate();
+            setInterval(executeClockUpdate, 1000);
+        },
 
-        // Lock Edit Immediate Action
-        DOM.btnLockEdit.addEventListener('click', () => {
-            lockDownSessionToViewer();
-        });
-
-        // Theme switch execution
-        DOM.btnThemeToggle.addEventListener('click', () => {
-            if (document.body.classList.contains('light-mode')) {
-                document.body.className = 'dark-mode';
-                state.theme = 'dark-mode';
-                DOM.btnThemeToggle.innerHTML = '<i class="fa-solid fa-sun"></i>';
+        // SECURITY ELEVATION OPERATIONS LOGIC
+        processLevel1Authentication() {
+            const inputVal = this.DOM.webPinInput.value.trim();
+            if (inputVal === window.AppEngine.state.security.webPin || inputVal === window.AppEngine.state.security.adminPin) {
+                this.DOM.webAuthError.style.display = "none";
+                this.DOM.webAuthOverlay.classList.add("hidden");
+                this.DOM.appContainer.classList.remove("hidden");
+                
+                // Assign security clearance dynamically depending on tracking entry signatures
+                window.AppEngine.state.accessLevel = (inputVal === window.AppEngine.state.security.adminPin) ? 2 : 1;
+                
+                this.logAuthenticationTransactionInstance();
+                this.applyAccessStateSecurityMatrix();
+                this.recompileAccountingDataCalculations();
+                this.startClockPipelineLoop();
             } else {
-                document.body.className = 'light-mode';
-                state.theme = 'light-mode';
-                DOM.btnThemeToggle.innerHTML = '<i class="fa-solid fa-moon"></i>';
+                this.DOM.webAuthError.style.display = "block";
+                this.DOM.webPinInput.value = "";
+                this.DOM.webPinInput.focus();
             }
-            localStorage.setItem('jcm_theme', state.theme);
-        });
+        },
 
-        // Logout Session trigger
-        DOM.btnLogout.addEventListener('click', () => {
-            triggerConfirmationDialog(
-                "Sign Out System?",
-                "Are you sure you want to terminate your secure cash management portal session?",
-                () => {
-                    writeFootprintLog("Terminated session. Sign out", state.role);
-                    state.role = null;
-                    DOM.passcodeInput.value = '';
-                    DOM.gatekeeperOverlay.classList.remove('hide');
-                    DOM.appContainer.classList.add('hide');
+        processLevel2Authentication() {
+            const inputVal = this.DOM.adminPinInput.value.trim();
+            if (inputVal === window.AppEngine.state.security.adminPin) {
+                this.DOM.adminAuthError.style.display = "none";
+                this.DOM.adminAuthModal.classList.add("hidden");
+                window.AppEngine.state.accessLevel = 2;
+                this.applyAccessStateSecurityMatrix();
+                this.logAuthenticationTransactionInstance("Admin Elevation");
+            } else {
+                this.DOM.adminAuthError.style.display = "block";
+                this.DOM.adminPinInput.value = "";
+                this.DOM.adminPinInput.focus();
+            }
+        },
+
+        logAuthenticationTransactionInstance(type = "Website Access") {
+            const now = new Date();
+            const logEntry = {
+                date: now.toLocaleDateString("en-US"),
+                time: now.toLocaleTimeString("en-US"),
+                updateTime: now.toLocaleTimeString("en-US"),
+                metadata: `${type} (${navigator.userAgent.slice(0, 45)}...)`
+            };
+            window.AppEngine.state.loginHistory.unshift(logEntry);
+            if (window.AppEngine.state.loginHistory.length > 50) window.AppEngine.state.loginHistory.pop();
+            window.AppEngine.cache.commitStateToCache();
+            this.renderAuthenticationHistoryRecords();
+        },
+
+        // SECURITY ACCESS RIGHTS STRUCTURAL RESTRICTIONS FORWARDING MATRICES
+        applyAccessStateSecurityMatrix() {
+            const UI = this.DOM;
+            const level = window.AppEngine.state.accessLevel;
+
+            if (level === 2) {
+                // Admin Access Mode Enabled
+                UI.accessBadge.className = "access-badge admin-mode-badge";
+                UI.accessStatusText.innerText = "Administrator Mode";
+                UI.adminUnlockBtn.classList.add("hidden");
+                UI.adminLockBtn.classList.remove("hidden");
+                
+                document.querySelectorAll(".admin-mutable").forEach(el => el.removeAttribute("disabled"));
+                UI.adminRestrictedBanner.classList.add("hidden");
+                
+                // Show actions column header in table head
+                const actionsTh = document.querySelector(".commercial-ledger-table th.col-actions");
+                if (actionsTh) actionsTh.classList.remove("hidden");
+                
+                UI.tableAddRowBtn.parentElement.classList.remove("hidden");
+            } else {
+                // Read Only Mode Enforcement
+                UI.accessBadge.className = "access-badge view-mode-badge";
+                UI.accessStatusText.innerText = "View Only Mode";
+                UI.adminUnlockBtn.classList.remove("hidden");
+                UI.adminLockBtn.classList.add("hidden");
+                
+                document.querySelectorAll(".admin-mutable").forEach(el => el.setAttribute("disabled", "true"));
+                UI.adminRestrictedBanner.classList.remove("hidden");
+                
+                const actionsTh = document.querySelector(".commercial-ledger-table th.col-actions");
+                if (actionsTh) actionsTh.classList.add("hidden");
+                
+                UI.tableAddRowBtn.parentElement.classList.add("hidden");
+            }
+
+            // Repopulate components layout to assert accessibility restrictions accurately across cell rows
+            this.renderLedgerDataRecords();
+            this.renderAuthenticationHistoryRecords();
+            this.updateClosingOperationalStatusBadge();
+        },
+
+        // SYSTEM TAB APPLICATION SWITCH ENGINE
+        switchTabContext(targetSectionId) {
+            window.AppEngine.state.activeTab = targetSectionId;
+            
+            document.querySelectorAll(".tab-content").forEach(section => {
+                if (section.id === targetSectionId) {
+                    section.classList.remove("hidden");
+                    section.classList.add("active");
+                } else {
+                    section.classList.add("hidden");
+                    section.classList.remove("active");
                 }
-            );
-        });
-
-        // --- 3. Navigation link mapping selectors ---
-        DOM.navTabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                const dest = tab.getAttribute('data-target');
-                switchActiveTabPanel(dest);
             });
-        });
 
-        // --- 4. Ledger row filtration configurations ---
-        const executeFilterQuery = () => {
-            state.filters.date = DOM.searchDateFilter.value;
-            state.filters.month = DOM.searchMonthFilter.value;
-            state.filters.year = DOM.searchYearFilter.value;
-            renderLedgerTable();
-        };
+            this.DOM.navLinks.forEach(btn => {
+                if (btn.getAttribute("data-target") === targetSectionId) {
+                    btn.classList.add("active");
+                } else {
+                    btn.classList.remove("active");
+                }
+            });
 
-        DOM.searchDateFilter.addEventListener('change', () => {
-            // Clear month filter when specific date is defined to prevent calculation overrides
-            if (DOM.searchDateFilter.value) {
-                DOM.searchMonthFilter.value = '';
+            // Context view rendering initialization dependencies pipeline
+            if (targetSectionId === "dashboard-section") this.renderMetricsDashboardView();
+            if (targetSectionId === "cash-entry-section") this.renderLedgerDataRecords();
+            if (targetSectionId === "reports-section") this.renderReportsViewsPipeline();
+            if (targetSectionId === "admin-panel-section") {
+                this.renderAuthenticationHistoryRecords();
+                this.updateClosingOperationalStatusBadge();
             }
-            executeFilterQuery();
-        });
-        
-        DOM.searchMonthFilter.addEventListener('change', executeFilterQuery);
-        DOM.searchYearFilter.addEventListener('change', executeFilterQuery);
+        },
 
-        DOM.btnClearFilters.addEventListener('click', () => {
-            DOM.searchDateFilter.value = '';
-            DOM.searchMonthFilter.value = '';
-            DOM.searchYearFilter.value = '2026';
-            executeFilterQuery();
-        });
+        // MASTER CENTRAL ACCOUNTING DATA COMPILATION TRANSFORM LOOPS
+        recompileAccountingDataCalculations() {
+            const records = window.AppEngine.state.records;
+            const systemTodayStr = window.AppEngine.utils.getSystemDateString();
+            
+            // Initialization matrices tracking allocations
+            const TodayTotals = { c1Large: 0, c1Small: 0, c1Account: 0, c2Large: 0, c2Small: 0, c2Account: 0 };
+            const OverallTotals = { c1Large: 0, c1Small: 0, c1Account: 0, c2Large: 0, c2Small: 0, c2Account: 0 };
+            
+            records.forEach(row => {
+                const c1L = window.AppEngine.utils.parseNumeric(row.c1Large);
+                const c1S = window.AppEngine.utils.parseNumeric(row.c1Small);
+                const c1A = window.AppEngine.utils.parseNumeric(row.c1Account);
+                const c2L = window.AppEngine.utils.parseNumeric(row.c2Large);
+                const c2S = window.AppEngine.utils.parseNumeric(row.c2Small);
+                const c2A = window.AppEngine.utils.parseNumeric(row.c2Account);
 
-        DOM.btnAddEntry.addEventListener('click', executeInsertNewLedgerRow);
+                // Cumulative aggregation allocations loop
+                OverallTotals.c1Large += c1L;
+                OverallTotals.c1Small += c1S;
+                OverallTotals.c1Account += c1A;
+                OverallTotals.c2Large += c2L;
+                OverallTotals.c2Small += c2S;
+                OverallTotals.c2Account += c2A;
 
-        // --- 5. Report view configuration filters ---
-        DOM.reportMonthFilter.addEventListener('change', generateCurrentReportStatement);
-        DOM.reportYearFilter.addEventListener('change', generateCurrentReportStatement);
-        DOM.btnPrintReport.addEventListener('click', executeReportPrintProtocol);
-        DOM.btnExportCsv.addEventListener('click', executeExportStatementCSV);
+                // Daily processing synchronization boundary checks
+                if (row.date === systemTodayStr) {
+                    TodayTotals.c1Large += c1L;
+                    TodayTotals.c1Small += c1S;
+                    TodayTotals.c1Account += c1A;
+                    TodayTotals.c2Large += c2L;
+                    TodayTotals.c2Small += c2S;
+                    TodayTotals.c2Account += c2A;
+                }
+            });
 
-        // --- 6. Administrators secure settings modifications ---
-        DOM.btnUpdatePasscodes.addEventListener('click', () => {
-            const vPass = DOM.adminViewerPasscode.value.trim();
-            const aPass = DOM.adminAdminPasscode.value.trim();
+            this.renderFooterAccountingTotalInterfaceElements(TodayTotals, OverallTotals);
+            
+            // Auto update views dependencies relative to active tracking properties
+            if (window.AppEngine.state.activeTab === "dashboard-section") this.renderMetricsDashboardView();
+        },
 
-            if (vPass.length < 4 || aPass.length < 4) {
-                alert("Credentials must contain at least 4 alphanumeric characters.");
+        renderFooterAccountingTotalInterfaceElements(T, O) {
+            const U = window.AppEngine.utils;
+            const DOM = this.DOM;
+
+            // Today Structural Output Display Bindings
+            DOM.totTC1Large.innerText = U.formatPKR(T.c1Large);
+            DOM.totTC1Small.innerText = U.formatPKR(T.c1Small);
+            DOM.totTC1Account.innerText = U.formatPKR(T.c1Account);
+            const tC1Cash = T.c1Large + T.c1Small;
+            DOM.totTC1Cash.innerText = U.formatPKR(tC1Cash);
+            DOM.totTC1WithAccount.innerText = U.formatPKR(tC1Cash + T.c1Account);
+
+            DOM.totTC2Large.innerText = U.formatPKR(T.c2Large);
+            DOM.totTC2Small.innerText = U.formatPKR(T.c2Small);
+            DOM.totTC2Account.innerText = U.formatPKR(T.c2Account);
+            const tC2Cash = T.c2Large + T.c2Small;
+            DOM.totTC2Cash.innerText = U.formatPKR(tC2Cash);
+            DOM.totTC2WithAccount.innerText = U.formatPKR(tC2Cash + T.c2Account);
+
+            const grandTodayCash = tC1Cash + tC2Cash;
+            const grandTodayWithAcc = (tC1Cash + T.c1Account) + (tC2Cash + T.c2Account);
+            DOM.totTGrandCash.innerText = U.formatPKR(grandTodayCash);
+            DOM.totTGrandWithAccount.innerText = U.formatPKR(grandTodayWithAcc);
+
+            // Cumulative Historical Output Display Bindings
+            DOM.totOC1Large.innerText = U.formatPKR(O.c1Large);
+            DOM.totOC1Small.innerText = U.formatPKR(O.c1Small);
+            DOM.totOC1Account.innerText = U.formatPKR(O.c1Account);
+            const oC1Cash = O.c1Large + O.c1Small;
+            DOM.totOC1Cash.innerText = U.formatPKR(oC1Cash);
+            DOM.totOC1WithAccount.innerText = U.formatPKR(oC1Cash + O.c1Account);
+
+            DOM.totOC2Large.innerText = U.formatPKR(O.c2Large);
+            DOM.totOC2Small.innerText = U.formatPKR(O.c2Small);
+            DOM.totOC2Account.innerText = U.formatPKR(O.c2Account);
+            const oC2Cash = O.c2Large + O.c2Small;
+            DOM.totOC2Cash.innerText = U.formatPKR(oC2Cash);
+            DOM.totOC2WithAccount.innerText = U.formatPKR(oC2Cash + O.c2Account);
+
+            const grandOverallCash = oC1Cash + oC2Cash;
+            const grandOverallWithAcc = (oC1Cash + O.c1Account) + (oC2Cash + O.c2Account);
+            DOM.totOGrandCash.innerText = U.formatPKR(grandOverallCash);
+            DOM.totOGrandWithAccount.innerText = U.formatPKR(grandOverallWithAcc);
+        },
+
+        // VIEW RENDERING INTERACTIVE INTERFACES - DASHBOARD
+        renderMetricsDashboardView() {
+            const U = window.AppEngine.utils;
+            const records = window.AppEngine.state.records;
+            const todayStr = U.getSystemDateString();
+
+            let todayCount = 0;
+            const Metrics = { c1L: 0, c1S: 0, c1A: 0, c2L: 0, c2S: 0, c2A: 0 };
+
+            records.forEach(row => {
+                if (row.date === todayStr) {
+                    todayCount++;
+                    Metrics.c1L += U.parseNumeric(row.c1Large);
+                    Metrics.c1S += U.parseNumeric(row.c1Small);
+                    Metrics.c1A += U.parseNumeric(row.c1Account);
+                    Metrics.c2L += U.parseNumeric(row.c2Large);
+                    Metrics.c2S += U.parseNumeric(row.c2Small);
+                    Metrics.c2A += U.parseNumeric(row.c2Account);
+                }
+            });
+
+            // DOM UI Values Interception Injection Routing
+            this.DOM.dashTodayEntries.innerText = todayCount;
+            this.DOM.dashC1Large.innerText = U.formatPKR(Metrics.c1L);
+            this.DOM.dashC1Small.innerText = U.formatPKR(Metrics.c1S);
+            
+            const c1Total = Metrics.c1L + Metrics.c1S;
+            this.DOM.dashC1TotalCash.innerText = U.formatPKR(c1Total);
+            this.DOM.dashC1TotalAccount.innerText = U.formatPKR(c1Total + Metrics.c1A);
+
+            this.DOM.dashC2Large.innerText = U.formatPKR(Metrics.c2L);
+            this.DOM.dashC2Small.innerText = U.formatPKR(Metrics.c2S);
+            
+            const c2Total = Metrics.c2L + Metrics.c2S;
+            this.DOM.dashC2TotalCash.innerText = U.formatPKR(c2Total);
+            this.DOM.dashC2TotalAccount.innerText = U.formatPKR(c2Total + Metrics.c2A);
+
+            this.DOM.dashGrandTodayCash.innerText = U.formatPKR(c1Total + c2Total);
+            this.DOM.dashGrandTodayAccount.innerText = U.formatPKR((c1Total + Metrics.c1A) + (c2Total + Metrics.c2A));
+        },
+
+        // VIEW RENDERING INTERACTIVE INTERFACES - CASH ENTRY LEDGER TABLE
+        renderLedgerDataRecords() {
+            const container = this.DOM.ledgerRowsContainer;
+            container.innerHTML = "";
+            
+            const records = window.AppEngine.state.records;
+            const isAdmin = (window.AppEngine.state.accessLevel === 2);
+            
+            if (records.length === 0) {
+                container.innerHTML = `<tr><td colspan="${isAdmin ? 11 : 10}" class="center-text text-muted" style="padding: 20px;">No transaction rows found inside the current ledger context. Click "Add New Entry Row" to build logs.</td></tr>`;
                 return;
             }
 
-            triggerConfirmationDialog(
-                "Update Secure Credentials?",
-                "Are you sure you want to modify system login credentials?",
-                () => {
-                    state.passcodeViewer = vPass;
-                    state.passcodeAdmin = aPass;
-                    localStorage.setItem('jcm_passcode_viewer', vPass);
-                    localStorage.setItem('jcm_passcode_admin', aPass);
-                    
-                    writeFootprintLog("Modified administrative gateway credentials", 'admin');
-                    alert("Gateway access credentials updated successfully.");
-                }
-            );
-        });
+            records.forEach((row, index) => {
+                const tr = document.createElement("tr");
+                
+                // Assert structural state variable parameter checks to verify lock criteria properties
+                const isDayLocked = window.AppEngine.state.closingLog.closedDates.includes(row.date);
+                const isInputEditable = isAdmin && !isDayLocked;
 
-        document.querySelectorAll('.btn-pwd-reveal').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const fieldId = btn.getAttribute('data-target');
-                const field = document.getElementById(fieldId);
-                const type = field.getAttribute('type') === 'password' ? 'text' : 'password';
-                field.setAttribute('type', type);
-                btn.querySelector('i').classList.toggle('fa-eye');
-                btn.querySelector('i').classList.toggle('fa-eye-slash');
+                tr.innerHTML = `
+                    <td class="col-sno center-text"><span class="static-cell-text">${index + 1}</span></td>
+                    <td class="col-date">
+                        <input type="date" class="cell-input ledger-data-field" data-id="${row.id}" data-field="date" value="${row.date}" ${isInputEditable ? "" : "disabled"}>
+                    </td>
+                    <td class="col-day center-text"><span class="static-cell-text text-muted" id="day-lbl-${row.id}">${window.AppEngine.utils.computeDayName(row.date)}</span></td>
+                    
+                    <td class="col-sub"><input type="text" class="cell-input numeric-field ledger-data-field" data-id="${row.id}" data-field="c1Large" value="${row.c1Large}" ${isInputEditable ? "" : "disabled"}></td>
+                    <td class="col-sub"><input type="text" class="cell-input numeric-field ledger-data-field" data-id="${row.id}" data-field="c1Small" value="${row.c1Small}" ${isInputEditable ? "" : "disabled"}></td>
+                    <td class="col-sub"><input type="text" class="cell-input numeric-field ledger-data-field" data-id="${row.id}" data-field="c1Account" value="${row.c1Account}" ${isInputEditable ? "" : "disabled"}></td>
+                    
+                    <td class="col-sub"><input type="text" class="cell-input numeric-field ledger-data-field" data-id="${row.id}" data-field="c2Large" value="${row.c2Large}" ${isInputEditable ? "" : "disabled"}></td>
+                    <td class="col-sub"><input type="text" class="cell-input numeric-field ledger-data-field" data-id="${row.id}" data-field="c2Small" value="${row.c2Small}" ${isInputEditable ? "" : "disabled"}></td>
+                    <td class="col-sub"><input type="text" class="cell-input numeric-field ledger-data-field" data-id="${row.id}" data-field="c2Account" value="${row.c2Account}" ${isInputEditable ? "" : "disabled"}></td>
+                    
+                    <td class="col-remarks"><input type="text" class="cell-input ledger-data-field" data-id="${row.id}" data-field="remarks" value="${row.remarks}" ${isInputEditable ? "" : "disabled"} placeholder="..."></td>
+                    
+                    ${isAdmin ? `<td class="col-actions center-text"><button class="btn-row-delete" data-id="${row.id}" title="Remove Entry Row" ${!isDayLocked ? "" : "disabled style='opacity:0.3; cursor:not-allowed;'" }><i class="fa-solid fa-square-minus"></i></button></td>` : ""}
+                `;
+
+                container.appendChild(tr);
             });
-        });
 
-        DOM.btnBackupLocal.addEventListener('click', executeLocalDataBackupDownload);
-        DOM.btnTriggerRestore.addEventListener('click', () => DOM.fileRestoreInput.click());
-        DOM.fileRestoreInput.addEventListener('change', handleBackupFileRestore);
-        DOM.btnFactoryReset.addEventListener('click', executeFactoryResetPurge);
-        DOM.btnCloseDay.addEventListener('click', executeDayClosingProtocol);
-        
-        DOM.btnClearHistory.addEventListener('click', () => {
-            triggerConfirmationDialog(
-                "Purge Security Logs history?",
-                "Are you sure you want to clear the logs history?",
-                () => {
-                    state.loginHistory = [];
-                    localStorage.removeItem('jcm_login_history');
-                    renderLoginTraceLogs();
-                }
-            );
-        });
+            this.bindLedgerRowInteractionInputListeners();
+        },
 
-        // Network connection listener checks
-        window.addEventListener('online', () => {
-            DOM.networkStatusText.innerText = "Cloud Sync Online";
-            DOM.networkStatusBar.querySelector('.status-dot').className = 'status-dot online';
-        });
-        window.addEventListener('offline', () => {
-            DOM.networkStatusText.innerText = "Offline Mode Active";
-            DOM.networkStatusBar.querySelector('.status-dot').className = 'status-dot offline';
-        });
-    }
+        bindLedgerRowInteractionInputListeners() {
+            const self = this;
+            
+            // Text and digit transformations input validation hooks
+            document.querySelectorAll(".ledger-data-field").forEach(input => {
+                input.addEventListener("change", function() {
+                    const rowId = this.getAttribute("data-id");
+                    const fieldName = this.getAttribute("data-field");
+                    let assignedValue = this.value;
 
-    /**
-     * Initializes structural live chronometers
-     */
-    function launchRealTimeChronometer() {
-        const updateClock = () => {
-            DOM.liveTime.innerText = getCurrentFormattedTime();
-            DOM.liveDate.innerText = getCurrentFormattedDate();
-        };
-        updateClock();
-        setInterval(updateClock, 1000);
-    }
-
-    /**
-     * Interrogates the configuration parameters of firebase.js wrapper
-     */
-    function verifyFirebaseCloudPresence() {
-        if (window.FirebaseEngine) {
-            window.FirebaseEngine.initialize(function (success) {
-                if (success) {
-                    DOM.firestoreEngineStatus.innerText = "Connected & Active";
-                    DOM.firestoreEngineStatus.className = "badge badge-admin";
-                    
-                    // Attempt real-time data fetch from Cloud Segment
-                    window.FirebaseEngine.pullLedgerFromCloud(function (cloudData) {
-                        if (cloudData && cloudData.length > 0) {
-                            state.ledgerData = cloudData;
-                            localStorage.setItem('jcm_ledger_data', JSON.stringify(cloudData));
-                            recalculateAllSystemAggregates();
-                            renderLedgerTable();
+                    // Match matching item object reference mappings targeting state arrays
+                    const index = window.AppEngine.state.records.findIndex(r => r.id === rowId);
+                    if (index !== -1) {
+                        if (fieldName === "date") {
+                            window.AppEngine.state.records[index].date = assignedValue;
+                            const labelDay = document.getElementById(`day-lbl-${rowId}`);
+                            if (labelDay) labelDay.innerText = window.AppEngine.utils.computeDayName(assignedValue);
+                        } else if (this.classList.contains("numeric-field")) {
+                            const rawNumeric = window.AppEngine.utils.parseNumeric(assignedValue);
+                            window.AppEngine.state.records[index][fieldName] = rawNumeric;
+                            this.value = rawNumeric; // Keep raw format in input cell during current runtime focus cycles
+                        } else {
+                            window.AppEngine.state.records[index][fieldName] = assignedValue;
                         }
+
+                        // Auto Commit processing loops execution parameters
+                        window.AppEngine.cache.commitStateToCache();
+                        self.recompileAccountingDataCalculations();
+                    }
+                });
+
+                // Clear formatting on focus for easy value typing input operations
+                if (input.classList.contains("numeric-field")) {
+                    input.addEventListener("focus", function() {
+                        if (this.value === "0") this.value = "";
                     });
-                } else {
-                    DOM.firestoreEngineStatus.innerText = "Unconfigured / Local Only";
-                    DOM.firestoreEngineStatus.className = "badge badge-viewer";
+                    input.addEventListener("blur", function() {
+                        if (this.value.trim() === "") this.value = "0";
+                    });
                 }
             });
+
+            // Row Removal Event Registrations Execution Control Loops
+            document.querySelectorAll(".btn-row-delete").forEach(btn => {
+                btn.addEventListener("click", function() {
+                    const targetId = this.getAttribute("data-id");
+                    const index = window.AppEngine.state.records.findIndex(r => r.id === targetId);
+                    if (index !== -1) {
+                        const targetRecord = window.AppEngine.state.records[index];
+                        if (window.AppEngine.state.closingLog.closedDates.includes(targetRecord.date)) {
+                            alert("This transaction row falls within a closed date segment and cannot be modified.");
+                            return;
+                        }
+                        if (confirm("Are you sure you want to permanently remove this financial record row?")) {
+                            window.AppEngine.state.records.splice(index, 1);
+                            window.AppEngine.cache.commitStateToCache();
+                            self.renderLedgerDataRecords();
+                            self.recompileAccountingDataCalculations();
+                        }
+                    }
+                });
+            });
+        },
+
+        appendNewRecordRowData() {
+            const U = window.AppEngine.utils;
+            const systemDateStr = U.getSystemDateString();
+
+            if (window.AppEngine.state.closingLog.closedDates.includes(systemDateStr)) {
+                alert("Today's financial ledger books have been closed by an administrator. Reopen the session in the Admin Console to build further entries.");
+                return;
+            }
+
+            const modelTemplate = {
+                id: U.generateUUID(),
+                date: systemDateStr,
+                c1Large: 0,
+                c1Small: 0,
+                c1Account: 0,
+                c2Large: 0,
+                c2Small: 0,
+                c2Account: 0,
+                remarks: ""
+            };
+
+            window.AppEngine.state.records.unshift(modelTemplate);
+            window.AppEngine.cache.commitStateToCache();
+            this.renderLedgerDataRecords();
+            this.recompileAccountingDataCalculations();
+        },
+
+        // VIEW RENDERING INTERACTIVE INTERFACES - REPORTS & ANALYTICS DATA SHEETS
+        renderReportsViewsPipeline() {
+            const U = window.AppEngine.utils;
+            const container = this.DOM.reportRowsContainer;
+            container.innerHTML = "";
+
+            // Query parameter criteria parsing loops
+            const filterDate = this.DOM.filterDateInput.value; // YYYY-MM-DD
+            const filterMonth = this.DOM.filterMonthInput.value; // MM
+            const filterYear = this.DOM.filterYearInput.value.trim(); // YYYY
+
+            const records = window.AppEngine.state.records;
+            let targetedFilteredStream = records.filter(row => {
+                // Precise Calendar Processing Match Evaluation Checks
+                if (filterDate && row.date !== filterDate) return false;
+                
+                if (row.date) {
+                    const structuralParts = row.date.split("-"); // [YYYY, MM, DD]
+                    if (filterMonth && structuralParts[1] !== filterMonth) return false;
+                    if (filterYear && structuralParts[0] !== filterYear) return false;
+                } else {
+                    if (filterMonth || filterYear) return false;
+                }
+                return true;
+            });
+
+            if (targetedFilteredStream.length === 0) {
+                container.innerHTML = `<tr><td colspan="10" class="center-text text-muted" style="padding: 20px;">No matching filter transactions stream logs recovered in the ledger stack context.</td></tr>`;
+                this.renderAggregatedMonthlySummaryGrid(targetedFilteredStream);
+                return;
+            }
+
+            // Stream rendering loops execution block
+            targetedFilteredStream.forEach((row, index) => {
+                const tr = document.createElement("tr");
+                const c1Total = U.parseNumeric(row.c1Large) + U.parseNumeric(row.c1Small);
+                const c2Total = U.parseNumeric(row.c2Large) + U.parseNumeric(row.c2Small);
+
+                tr.innerHTML = `
+                    <td class="center-text">${index + 1}</td>
+                    <td>style="white-space:nowrap;"${row.date}</td>
+                    <td class="center-text text-muted">${U.computeDayName(row.date)}</td>
+                    <td>${U.formatPKR(row.c1Large)}</td>
+                    <td>${U.formatPKR(row.c1Small)}</td>
+                    <td class="text-blue">${U.formatPKR(row.c1Account)}</td>
+                    <td>${U.formatPKR(row.c2Large)}</td>
+                    <td>${U.formatPKR(row.c2Small)}</td>
+                    <td class="text-blue">${U.formatPKR(row.c2Account)}</td>
+                    <td style="text-align:left; font-size:0.8rem;">${row.remarks || "---"}</td>
+                `;
+                container.appendChild(tr);
+            });
+
+            this.renderAggregatedMonthlySummaryGrid(targetedFilteredStream);
+        },
+
+        renderAggregatedMonthlySummaryGrid(filteredStream) {
+            const U = window.AppEngine.utils;
+            const grid = this.DOM.monthlySummaryCardsGrid;
+            grid.innerHTML = "";
+
+            // Aggregate historical records down into separate calendar months groupings indexes mapping keys
+            const MonthlyMatricesMap = {};
+
+            filteredStream.forEach(row => {
+                if (!row.date) return;
+                const dateParts = row.date.split("-");
+                if (dateParts.length !== 3) return;
+                
+                // Formulate aggregate groupings targeting specific year-month unique block keys
+                const matrixGroupKey = `${dateParts[0]}-${dateParts[1]}`; // e.g. 2026-07
+                
+                if (!MonthlyMatricesMap[matrixGroupKey]) {
+                    MonthlyMatricesMap[matrixGroupKey] = {
+                        c1TotalCash: 0,
+                        c1WithAccount: 0,
+                        c2TotalCash: 0,
+                        c2WithAccount: 0,
+                        combinedCash: 0,
+                        combinedWithAccount: 0,
+                        label: new Date(dateParts[0], dateParts[1] - 1, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" })
+                    };
+                }
+
+                const c1L = U.parseNumeric(row.c1Large);
+                const c1S = window.AppEngine.utils.parseNumeric(row.c1Small);
+                const c1A = window.AppEngine.utils.parseNumeric(row.c1Account);
+                const c2L = window.AppEngine.utils.parseNumeric(row.c2Large);
+                const c2S = window.AppEngine.utils.parseNumeric(row.c2Small);
+                const c2A = window.AppEngine.utils.parseNumeric(row.c2Account);
+
+                const c1Cash = c1L + c1S;
+                const c2Cash = c2L + c2S;
+
+                MonthlyMatricesMap[matrixGroupKey].c1TotalCash += c1Cash;
+                MonthlyMatricesMap[matrixGroupKey].c1WithAccount += (c1Cash + c1A);
+                MonthlyMatricesMap[matrixGroupKey].c2TotalCash += c2Cash;
+                MonthlyMatricesMap[matrixGroupKey].c2WithAccount += (c2Cash + c2A);
+                MonthlyMatricesMap[matrixGroupKey].combinedCash += (c1Cash + c2Cash);
+                MonthlyMatricesMap[matrixGroupKey].combinedWithAccount += ((c1Cash + c1A) + (c2Cash + c2A));
+            });
+
+            // Compile card UI modules dynamically depending on generated groupings matrix logs map tracking metrics
+            const sortedGroupKeys = Object.keys(MonthlyMatricesMap).sort().reverse();
+            
+            if (sortedGroupKeys.length === 0) {
+                grid.innerHTML = `<div class="text-muted text-sm">No monthly summary compilation metrics processing nodes mapped to this stream subset.</div>`;
+                return;
+            }
+
+            sortedGroupKeys.forEach(key => {
+                const node = MonthlyMatricesMap[key];
+                const card = document.createElement("div");
+                card.className = "month-matrix-card";
+                
+                card.innerHTML = `
+                    <h4><i class="fa-solid fa-calendar-check"></i> ${node.label}</h4>
+                    <div class="month-matrix-row"><span>Comp 1 Cash Total:</span> <span>${U.formatPKR(node.c1TotalCash)}</span></div>
+                    <div class="month-matrix-row"><span>Comp 1 With Account:</span> <span>${U.formatPKR(node.c1WithAccount)}</span></div>
+                    <hr class="card-divider" style="margin:6px 0;">
+                    <div class="month-matrix-row"><span>Comp 2 Cash Total:</span> <span>${U.formatPKR(node.c2TotalCash)}</span></div>
+                    <div class="month-matrix-row"><span>Comp 2 With Account:</span> <span>${U.formatPKR(node.c2WithAccount)}</span></div>
+                    
+                    <div class="month-matrix-row highlight"><span>Overall Cash:</span> <span>${U.formatPKR(node.combinedCash)}</span></div>
+                    <div class="month-matrix-row highlight" style="color:var(--success);"><span>Overall With Acc:</span> <span>${U.formatPKR(node.combinedWithAccount)}</span></div>
+                `;
+                grid.appendChild(card);
+            });
+        },
+
+        generateStructuredCSVFileDownload() {
+            const records = window.AppEngine.state.records;
+            if (records.length === 0) {
+                alert("The operational ledger data stack registry context contains zero elements. Cannot run data packaging operations.");
+                return;
+            }
+
+            // Construct corporate standardized accounting CSV file contents layout string formatting strings
+            let dataLines = [];
+            dataLines.push("S.No,Transaction Date,Day Column,Company 1 Large Cash,Company 1 Small Cash,Company 1 Account Index,Company 2 Large Cash,Company 2 Small Cash,Company 2 Account Index,Operator Remarks Metadata Signature");
+
+            records.forEach((row, index) => {
+                const dayStr = window.AppEngine.utils.computeDayName(row.date);
+                // Sanitize text sequences from comma separation failures boundaries parameters
+                const stringRemarks = row.remarks ? row.remarks.replace(/"/g, '""') : "";
+                
+                const segmentLine = [
+                    index + 1,
+                    row.date,
+                    dayStr,
+                    row.c1Large,
+                    row.c1Small,
+                    row.c1Account,
+                    row.c2Large,
+                    row.c2Small,
+                    row.c2Account,
+                    `"${stringRemarks}"`
+                ];
+                dataLines.push(segmentLine.join(","));
+            });
+
+            const comprehensiveCSVContentString = dataLines.join("\n");
+            const blobObj = new Blob([comprehensiveCSVContentString], { type: "text/csv;charset=utf-8;" });
+            const linkElement = document.createElement("a");
+            
+            const systemTime = new Date().toISOString().slice(0,10);
+            linkElement.href = URL.createObjectURL(blobObj);
+            linkElement.setAttribute("download", `Jawad_Cash_Ledger_MasterReport_${systemTime}.csv`);
+            document.body.appendChild(linkElement);
+            linkElement.click();
+            document.body.removeChild(linkElement);
+        },
+
+        // VIEW RENDERING INTERACTIVE INTERFACES - TECHNICAL ADM PANEL CONSOLE CONTROLS
+        renderAuthenticationHistoryRecords() {
+            const container = this.DOM.loginHistoryRowsContainer;
+            container.innerHTML = "";
+            const history = window.AppEngine.state.loginHistory;
+
+            if (history.length === 0) {
+                container.innerHTML = `<tr><td colspan="4" class="center-text text-muted" style="padding:15px;">No operations authorization access session lifecycle events tracked yet in this runtime environment context.</td></tr>`;
+                return;
+            }
+
+            history.forEach(log => {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td>${log.date}</td>
+                    <td>${log.time}</td>
+                    <td>${log.updateTime}</td>
+                    <td>${log.metadata}</td>
+                `;
+                container.appendChild(tr);
+            });
+        },
+
+        updateClosingOperationalStatusBadge() {
+            const systemTodayStr = window.AppEngine.utils.getSystemDateString();
+            const badge = this.DOM.dayClosingStatusBadge;
+            const isTodayClosed = window.AppEngine.state.closingLog.closedDates.includes(systemTodayStr);
+
+            if (isTodayClosed) {
+                badge.className = "badge status-closed";
+                badge.innerText = "Ledger Immutable & Closed (End of Day)";
+                this.DOM.adminCloseDayBtn.classList.add("hidden");
+                this.DOM.adminReopenDayBtn.classList.remove("hidden");
+            } else {
+                badge.className = "badge status-open";
+                badge.innerText = "Ledger Unlocked (Open)";
+                this.DOM.adminCloseDayBtn.classList.remove("hidden");
+                this.DOM.adminReopenDayBtn.classList.add("hidden");
+            }
+        },
+
+        processCloseDayExecution() {
+            const todayStr = window.AppEngine.utils.getSystemDateString();
+            if (window.AppEngine.state.closingLog.closedDates.includes(todayStr)) {
+                alert("Today's transaction indexing processing block has already been closed out by a prior operation block call.");
+                return;
+            }
+            if (confirm("Executing the Close Today action makes all records associated with today's calendar date completely immutable to standard operators. Proceed?")) {
+                window.AppEngine.state.closingLog.closedDates.push(todayStr);
+                window.AppEngine.cache.commitStateToCache();
+                this.updateClosingOperationalStatusBadge();
+                this.renderLedgerDataRecords();
+                alert("Day-End structural bookkeeping close routine completed successfully. Records locked.");
+            }
+        },
+
+        processReopenDayExecution() {
+            const todayStr = window.AppEngine.utils.getSystemDateString();
+            if (!window.AppEngine.state.closingLog.closedDates.includes(todayStr)) return;
+            
+            if (confirm("Are you sure you want to lift security constraints and re-open the ledger editing window for today's session?")) {
+                const targetIndex = window.AppEngine.state.closingLog.closedDates.indexOf(todayStr);
+                if (targetIndex !== -1) {
+                    window.AppEngine.state.closingLog.closedDates.splice(targetIndex, 1);
+                    window.AppEngine.cache.commitStateToCache();
+                    this.updateClosingOperationalStatusBadge();
+                    this.renderLedgerDataRecords();
+                    alert("Ledger session window successfully unlocked. Modifying entries capability restored.");
+                }
+            }
+        },
+
+        alterSystemAccessPinCode(targetLevelTier) {
+            const inputField = (targetLevelTier === 1) ? this.DOM.adminWebPinInput : this.DOM.adminAdmPinInput;
+            const newPinValueString = inputField.value.trim();
+
+            if (newPinValueString.length !== 4 || isNaN(parseInt(newPinValueString))) {
+                alert("The entered validation credential parameters must consist exactly of 4 numeric characters digits.");
+                return;
+            }
+
+            if (targetLevelTier === 1) {
+                window.AppEngine.state.security.webPin = newPinValueString;
+                alert("Level 1 Website Access PIN successfully upgraded. Use the new credential parameters on subsequent authorization prompt entries.");
+            } else {
+                window.AppEngine.state.security.adminPin = newPinValueString;
+                alert("Level 2 Administrative Management Write PIN successfully changed.");
+            }
+
+            inputField.value = "";
+            window.AppEngine.cache.commitStateToCache();
+        },
+
+        triggerBackupJSONDownloadStream() {
+            const payload = localStorage.getItem(window.AppEngine.cache.storageKey);
+            if (!payload) {
+                alert("No local state transaction metrics logs are cached in this processing node context.");
+                return;
+            }
+            const blobObj = new Blob([payload], { type: "application/json" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blobObj);
+            link.setAttribute("download", `Emergency_LocalCache_RawDataBackup_${Date.now()}.json`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        },
+
+        executeFactoryClearDataRoutine() {
+            if (confirm("CRITICAL WARNING: You are initiating a complete destructuring database wipe routine execution command loop sequence. This action clears ALL local cache indexes permanently. Proceed?")) {
+                if (confirm("FINAL SYSTEM INTEGRITY CHECK: Are you absolutely certain? This operation cannot be rolled back or undone under any recovery parameter index.")) {
+                    localStorage.removeItem(window.AppEngine.cache.storageKey);
+                    window.AppEngine.state.records = [];
+                    window.AppEngine.state.loginHistory = [];
+                    window.AppEngine.state.closingLog.closedDates = [];
+                    window.AppEngine.state.security.webPin = "4863";
+                    window.AppEngine.state.security.adminPin = "2008";
+                    
+                    window.AppEngine.cache.commitStateToCache();
+                    alert("Hardware local storage nodes destructuring hard reset routines executed successfully. Re-routing application context to authorization core screen frameworks.");
+                    window.location.reload();
+                }
+            }
+        },
+
+        // APPLICATION INTERACTIVE COLOR MATRICES LOGIC SYSTEM
+        toggleApplicationThemeSystem() {
+            const elementBody = document.body;
+            const currentSelectedIcon = this.DOM.themeToggle.querySelector("i");
+            const currentSelectedText = this.DOM.themeToggle.querySelector("span");
+
+            if (elementBody.classList.contains("light-theme")) {
+                elementBody.classList.remove("light-theme");
+                elementBody.classList.add("dark-theme");
+                window.AppEngine.state.theme = "dark-theme";
+                currentSelectedIcon.className = "fa-solid fa-sun";
+                currentSelectedText.innerText = "Light Mode";
+            } else {
+                elementBody.classList.remove("dark-theme");
+                elementBody.classList.add("light-theme");
+                window.AppEngine.state.theme = "light-theme";
+                currentSelectedIcon.className = "fa-solid fa-moon";
+                currentSelectedText.innerText = "Dark Mode";
+            }
+            window.AppEngine.cache.commitStateToCache();
+        },
+
+        assertActiveCachedThemeContext() {
+            const elementBody = document.body;
+            const icon = this.DOM.themeToggle.querySelector("i");
+            const text = this.DOM.themeToggle.querySelector("span");
+            
+            if (window.AppEngine.state.theme === "dark-theme") {
+                elementBody.className = "dark-theme";
+                icon.className = "fa-solid fa-sun";
+                text.innerText = "Light Mode";
+            } else {
+                elementBody.className = "light-theme";
+                icon.className = "fa-solid fa-moon";
+                text.innerText = "Dark Mode";
+            }
+        },
+
+        // INTERACTION BRIDGE LINK ROUTER TRIGGERS BINDINGS (TARGET FOR FIREBASE CONNECTORS)
+        triggerManualCloudTransaction(directionString) {
+            if (!window.AppEngine.state.isCloudConnected) {
+                alert("No cloud storage network synchronization channels are currently connected. Authenticate with a Google profile node inside the Admin Console first to unlock cloud backups features.");
+                return;
+            }
+
+            // Dispatch global synchronization tracking indicators triggers to alert operational modules hooks inside firebase logic wrappers
+            if (directionString === "backup") {
+                window.dispatchEvent(new CustomEvent("firebase_manual_backup_requested"));
+            } else if (directionString === "restore") {
+                if (confirm("Restoring remote database records replaces all current local ledger rows with the latest cloud storage snapshot state. Proceed?")) {
+                    window.dispatchEvent(new CustomEvent("firebase_manual_restore_requested"));
+                }
+            }
+        },
+
+        updateCloudSyncTelemetryDashboard(statusBadgeText, isSuccess, dynamicMessageText) {
+            const badge = this.DOM.cloudStatusBadge;
+            const text = this.DOM.lblBackupStatusText;
+            const timeLog = this.DOM.lblLastBackupTimestamp;
+
+            badge.innerText = statusBadgeText;
+            if (isSuccess) {
+                badge.className = "badge status-online";
+                const eventMoment = new Date();
+                timeLog.innerText = `${eventMoment.toLocaleDateString()} at ${eventMoment.toLocaleTimeString()}`;
+            } else {
+                badge.className = "badge status-offline";
+            }
+            text.innerText = dynamicMessageText;
         }
-    }
+    },
 
-    // ==========================================
-    // MODULE LOAD ENTRY POINT
-    // ==========================================
-    document.addEventListener('DOMContentLoaded', () => {
-        initDatabaseState();
-        bindInterfaceCoreEvents();
-        launchRealTimeChronometer();
-        recalculateAllSystemAggregates();
-        renderLoginTraceLogs();
+    // GLOBAL INTERACTION ENTRY POINT BOOTSTRAP INITIALIZER
+    boot: function() {
+        this.cache.initializeLocalCache();
+        this.ui.cacheDOMSelectors();
+        this.ui.initializeEvents();
+        this.ui.assertActiveCachedThemeContext();
         
-        // Initializing matching Month option according to current Month
-        const currentMonthIdx = String(new Date().getMonth() + 1).padStart(2, '0');
-        DOM.reportMonthFilter.value = currentMonthIdx;
-        generateCurrentReportStatement();
+        // Render current local states before cloud triggers map data hooks profiles
+        this.ui.recompileAccountingDataCalculations();
+        
+        console.log("Jawad Cash Management Commercial Core Application Logic Framework Engine loaded successfully.");
+    }
+};
 
-        // Check Firebase Integration
-        verifyFirebaseCloudPresence();
-    });
-
-})();
+// Fire processing execution thread sequences instantly on page DOM resolution events
+document.addEventListener("DOMContentLoaded", () => {
+    window.AppEngine.boot();
+});

@@ -3,666 +3,592 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#1e3a8a">
-    <meta name="description" content="Secure Commercial Cash Management System for Jawad Cash Management">
-    <title>Jawad Cash Management</title>
-    
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="assets/icons/icon-192x192.png">
-    
+    <title>Jawad Cash Management System</title>
+    <!-- Corporate Asset Dependencies: FontAwesome Icons & Google Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    
-    <link rel="stylesheet" href="style.css">
-</head>
-<body class="light-mode">
+    <style>
+        /* CORE DESIGN SYSTEM VECTOR ARCHITECTURE */
+        :root {
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --blue-link: #3b82f6;
+            --transition-speed: 0.22s;
+        }
 
-    <div id="gatekeeper-overlay" class="gatekeeper-overlay">
-        <div class="gatekeeper-card">
-            <div class="gatekeeper-header">
-                <div class="app-logo-container">
-                    <i class="fa-solid fa-vault fa-3x brand-primary-color"></i>
-                </div>
-          </div>
-            
-            <div class="gatekeeper-body">
-                <div class="input-group">
-                    <label for="passcode-input">Enter Authorization Passcode</label>
-                    <div class="passcode-wrapper">
-                        <input type="password" id="passcode-input" maxlength="8" placeholder="••••" autocomplete="off" autofocus>
-                        <button type="button" id="toggle-gatekeeper-passcode" class="btn-icon">
-                            <i class="fa-solid fa-eye"></i>
-                        </button>
-                    </div>
-                    <span id="gatekeeper-error" class="error-text hide">Invalid passcode. Please try again.</span>
-                </div>
-                
-                <button type="button" id="btn-authenticate" class="btn-primary btn-block">
-                    <i class="fa-solid fa-key"></i> Authenticate
-                </button>
+        body.light-theme {
+            --bg-core: #f8fafc;
+            --bg-surface: #ffffff;
+            --bg-input: #f1f5f9;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            --border-element: #e2e8f0;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+            --accent-glow: rgba(59, 130, 246, 0.08);
+        }
+
+        body.dark-theme {
+            --bg-core: #0f172a;
+            --bg-surface: #1e293b;
+            --bg-input: #0f172a;
+            --text-primary: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --text-muted: #64748b;
+            --border-element: #334155;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+            --accent-glow: rgba(59, 130, 246, 0.15);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg-core); color: var(--text-primary); transition: background-color var(--transition-speed), color var(--transition-speed); overflow-x: hidden; }
+        
+        .hidden { display: none !important; }
+        .center-text { text-align: center; }
+        .text-muted { color: var(--text-muted); }
+        .text-blue { color: var(--blue-link); font-weight: 600; }
+        
+        /* 1. GATEWAY GATEKEEPER INTERFACE ARCHITECTURE */
+        #website-auth-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: var(--bg-core); z-index: 9999; display: flex; justify-content: center; align-items: center; padding: 20px; }
+        .auth-card { background: var(--bg-surface); padding: 40px; border-radius: 12px; box-shadow: var(--shadow-md); border: 1px solid var(--border-element); width: 100%; max-width: 420px; text-align: center; }
+        .auth-logo { font-size: 2.5rem; color: var(--blue-link); margin-bottom: 15px; }
+        .auth-card h2 { margin-bottom: 8px; font-weight: 700; }
+        .pin-container { margin: 24px 0; position: relative; }
+        .pin-input-field { width: 100%; padding: 14px; font-size: 1.5rem; text-align: center; letter-spacing: 8px; border-radius: 8px; border: 2px solid var(--border-element); background: var(--bg-input); color: var(--text-primary); font-family: 'JetBrains Mono', monospace; outline: none; transition: border-color var(--transition-speed); }
+        .pin-input-field:focus { border-color: var(--blue-link); }
+        .error-prompt { color: var(--danger); font-size: 0.875rem; display: none; margin-top: 8px; font-weight: 500; }
+        .btn-primary { width: 100%; padding: 14px; background: var(--blue-link); border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer; font-size: 1rem; transition: opacity var(--transition-speed); }
+        .btn-primary:hover { opacity: 0.9; }
+
+        /* 2. CORPORATE CORE APPLICATION WRAPPER */
+        #app-container { display: flex; flex-direction: column; min-height: 100vh; }
+        
+        /* APPLICATION TOP NAVIGATION BANNER */
+        header.app-header { background: var(--bg-surface); border-bottom: 1px solid var(--border-element); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 900; box-shadow: var(--shadow-sm); }
+        .brand-block h1 { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.5px; display: flex; align-items: center; gap: 8px; }
+        .brand-block h1 i { color: var(--blue-link); }
+        .system-telemetry-cluster { display: flex; align-items: center; gap: 16px; font-size: 0.875rem; }
+        .clock-display { font-family: 'JetBrains Mono', monospace; font-weight: 500; color: var(--text-secondary); background: var(--bg-input); padding: 4px 10px; border-radius: 4px; border: 1px solid var(--border-element); }
+        
+        /* SECURITY CLEARANCE BADGES */
+        .access-badge { padding: 4px 10px; border-radius: 20px; font-weight: 600; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 6px; }
+        .view-mode-badge { background: rgba(245, 158, 11, 0.15); color: var(--warning); }
+        .admin-mode-badge { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+
+        /* APPLICATION PRIMARY CONTROL RIBBON */
+        .navigation-control-ribbon { background: var(--bg-surface); border-bottom: 1px solid var(--border-element); padding: 0 24px; display: flex; justify-content: space-between; align-items: center; overflow-x: auto; }
+        .nav-tabs-group { display: flex; }
+        .nav-btn { padding: 16px 20px; background: none; border: none; color: var(--text-secondary); font-weight: 500; font-size: 0.925rem; cursor: pointer; display: flex; align-items: center; gap: 8px; position: relative; white-space: nowrap; }
+        .nav-btn:hover { color: var(--text-primary); }
+        .nav-btn.active { color: var(--blue-link); font-weight: 600; }
+        .nav-btn.active::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; background: var(--blue-link); border-radius: 3px 3px 0 0; }
+        .action-utilities-group { display: flex; gap: 8px; margin-left: 16px; }
+        .btn-utility { padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border-element); background: var(--bg-surface); color: var(--text-secondary); font-size: 0.85rem; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all var(--transition-speed); }
+        .btn-utility:hover { background: var(--bg-input); color: var(--text-primary); }
+
+        /* 3. WORKING CANVAS AREA TIERS */
+        main.app-canvas { flex: 1; padding: 24px; max-width: 1600px; width: 100%; margin: 0 auto; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.18s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* ADMIN NOTIFICATION MESSAGE STACK */
+        .restricted-view-banner { background: var(--accent-glow); border: 1px dashed var(--warning); padding: 14px; border-radius: 8px; color: var(--warning); font-size: 0.9rem; font-weight: 500; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+
+        /* INDUSTRIAL INTERACTIVE METRIC CARDS GRID */
+        .metrics-cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 24px; }
+        .metric-card { background: var(--bg-surface); border: 1px solid var(--border-element); padding: 20px; border-radius: 10px; box-shadow: var(--shadow-sm); position: relative; overflow: hidden; }
+        .metric-card.accented { border-left: 4px solid var(--blue-link); }
+        .metric-card h3 { font-size: 0.85rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 12px; font-weight: 600; }
+        .metric-value { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 14px; font-family: 'JetBrains Mono', monospace; }
+        .metric-sub-rows-stack { display: flex; flex-direction: column; gap: 6px; font-size: 0.825rem; color: var(--text-secondary); border-top: 1px solid var(--border-element); padding-top: 10px; }
+        .metric-sub-row { display: flex; justify-content: space-between; }
+        .metric-sub-row span:last-child { font-family: 'JetBrains Mono', monospace; font-weight: 500; }
+
+        /* INDUSTRIAL ACCOUNTING SPREADSHEET TABLE VIEWS */
+        .table-view-card-wrapper { background: var(--bg-surface); border: 1px solid var(--border-element); border-radius: 10px; box-shadow: var(--shadow-sm); overflow: hidden; margin-bottom: 24px; }
+        .table-header-action-bar { padding: 16px 20px; border-bottom: 1px solid var(--border-element); display: flex; justify-content: space-between; align-items: center; background: var(--bg-surface); flex-wrap: wrap; gap: 12px; }
+        .table-title { font-size: 1.05rem; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        .table-responsive-viewport { overflow-x: auto; max-height: 65vh; position: relative; }
+        
+        .commercial-ledger-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
+        .commercial-ledger-table th { background: var(--bg-core); color: var(--text-secondary); font-weight: 600; padding: 12px 14px; font-size: 0.825rem; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid var(--border-element); position: sticky; top: 0; z-index: 10; }
+        .commercial-ledger-table th.col-group-header { border-bottom: 1px solid var(--border-element); text-align: center; }
+        .commercial-ledger-table td { padding: 6px 8px; border-bottom: 1px solid var(--border-element); vertical-align: middle; background: var(--bg-surface); }
+        .commercial-ledger-table tr:hover td { background: var(--bg-input); }
+        
+        /* IN-CELL CELL DATA INPUT INPUTS */
+        .cell-input { width: 100%; padding: 8px 10px; border: 1px solid transparent; background: transparent; color: var(--text-primary); border-radius: 4px; font-size: 0.875rem; transition: all var(--transition-speed); outline: none; }
+        .cell-input:focus { border-color: var(--blue-link); background: var(--bg-surface); box-shadow: 0 0 0 3px var(--accent-glow); }
+        .cell-input:disabled { color: var(--text-secondary); cursor: not-allowed; -webkit-opacity: 1; opacity: 1; }
+        .cell-input.numeric-field { font-family: 'JetBrains Mono', monospace; text-align: right; }
+        
+        /* TABLE WIDTH SPECIFIC LAYOUT COLUMN DEFINITIONS */
+        .col-sno { width: 50px; }
+        .col-date { width: 140px; }
+        .col-day { width: 100px; }
+        .col-sub { width: 125px; }
+        .col-remarks { min-width: 200px; }
+        .col-actions { width: 70px; }
+        
+        .static-cell-text { padding: 8px 10px; display: block; font-size: 0.875rem; }
+        .btn-row-delete { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.15rem; transition: color var(--transition-speed); }
+        .btn-row-delete:hover:not(:disabled) { color: var(--danger); }
+        .btn-add-row-action { padding: 10px 18px; border-radius: 6px; background: var(--bg-core); border: 1px dashed var(--border-element); width: calc(100% - 40px); margin: 16px 20px; cursor: pointer; font-weight: 500; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all var(--transition-speed); color: var(--text-secondary); }
+        .btn-add-row-action:hover { background: var(--bg-input); border-color: var(--blue-link); color: var(--blue-link); }
+
+        /* COMPREHENSIVE FLOATING SUMMARY FOOTER SUMMARY BOXES */
+        .accounting-summary-footer-strip { background: var(--bg-surface); border-top: 2px solid var(--border-element); padding: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; font-size: 0.875rem; }
+        .summary-block-column h4 { font-size: 0.825rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+        .summary-calculation-matrix { display: flex; flex-direction: column; gap: 8px; }
+        .summary-matrix-item { display: flex; justify-content: space-between; padding-bottom: 4px; border-bottom: 1px dashed var(--border-element); }
+        .summary-matrix-item span:last-child { font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+        .summary-matrix-item.grand-highlight { border-bottom: none; border-top: 1px solid var(--border-element); padding-top: 8px; font-weight: 700; color: var(--blue-link); font-size: 1rem; }
+        
+        /* 4. ANALYTICS & FILTERS CONTROL LAYOUT STACK */
+        .analytics-filter-controls-panel { background: var(--bg-surface); border: 1px solid var(--border-element); padding: 18px 20px; border-radius: 10px; margin-bottom: 24px; display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap; box-shadow: var(--shadow-sm); }
+        .filter-control-node { display: flex; flex-direction: column; gap: 6px; }
+        .filter-control-node label { font-size: 0.775rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); }
+        .filter-input-element { padding: 9px 12px; border-radius: 6px; border: 1px solid var(--border-element); background: var(--bg-core); color: var(--text-primary); outline: none; font-size: 0.9rem; min-width: 150px; }
+        .filter-input-element:focus { border-color: var(--blue-link); }
+        
+        /* ANALYTICS REPORT CARDS STACK STRUCTURES */
+        .monthly-summary-cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; margin-top: 24px; }
+        .month-matrix-card { background: var(--bg-surface); border: 1px solid var(--border-element); padding: 18px; border-radius: 8px; box-shadow: var(--shadow-sm); }
+        .month-matrix-card h4 { font-size: 1rem; font-weight: 600; color: var(--blue-link); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .month-matrix-row { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px; color: var(--text-secondary); }
+        .month-matrix-row span:last-child { font-family: 'JetBrains Mono', monospace; font-weight: 500; color: var(--text-primary); }
+        .month-matrix-row.highlight { font-weight: 600; margin-top: 6px; border-top: 1px solid var(--border-element); padding-top: 6px; font-size: 0.9rem; }
+        .month-matrix-row.highlight span:last-child { font-weight: 700; }
+
+        /* 5. ADMINISTRATIVE CONTROL COMPLEX VIEWS PANEL */
+        .admin-console-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 24px; }
+        @media (max-width: 550px) { .admin-console-grid { grid-template-columns: 1fr; } }
+        .admin-console-section-card { background: var(--bg-surface); border: 1px solid var(--border-element); border-radius: 10px; box-shadow: var(--shadow-sm); padding: 24px; }
+        .admin-console-section-card h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 18px; border-bottom: 1px solid var(--border-element); padding-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+        .admin-console-section-card h3 i { color: var(--blue-link); }
+        
+        .admin-setting-control-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 16px; }
+        .admin-setting-info-text h5 { font-size: 0.925rem; font-weight: 600; margin-bottom: 2px; }
+        .admin-setting-info-text p { font-size: 0.825rem; color: var(--text-muted); }
+        .input-inline-action-lock-group { display: flex; gap: 6px; max-width: 240px; width: 100%; }
+        .input-inline-action-lock-group input { flex: 1; padding: 8px 12px; border: 1px solid var(--border-element); border-radius: 6px; background: var(--bg-core); color: var(--text-primary); text-align: center; font-family: 'JetBrains Mono', monospace; letter-spacing: 2px; outline: none; font-size: 0.9rem; }
+        .btn-inline-action { padding: 8px 14px; background: var(--bg-core); border: 1px solid var(--border-element); color: var(--text-primary); font-weight: 500; border-radius: 6px; font-size: 0.85rem; cursor: pointer; transition: all var(--transition-speed); }
+        .btn-inline-action:hover { border-color: var(--blue-link); color: var(--blue-link); }
+
+        /* USER INTERFACE PROFILE MODULE CARDS */
+        .user-auth-profile-card { background: var(--bg-core); border: 1px solid var(--border-element); border-radius: 8px; padding: 16px; display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
+        .user-avatar-frame { width: 52px; height: 52px; border-radius: 50%; background: var(--border-element); overflow: hidden; border: 2px solid var(--blue-link); }
+        .user-avatar-frame img { width: 100%; height: 100%; object-fit: cover; }
+        .profile-data-metrics h4 { font-size: 0.95rem; font-weight: 600; }
+        .profile-data-metrics p { font-size: 0.825rem; color: var(--text-muted); }
+        
+        /* TECHNICAL REALTIME DIAGNOSTICS LOG TABLES */
+        .diagnostics-log-table-wrapper { font-size: 0.825rem; overflow-x: auto; margin-top: 12px; border: 1px solid var(--border-element); border-radius: 6px; max-height: 220px; }
+        .diagnostics-log-table { width: 100%; border-collapse: collapse; }
+        .diagnostics-log-table th { background: var(--bg-core); padding: 8px 10px; text-align: left; font-weight: 600; color: var(--text-secondary); border-bottom: 1px solid var(--border-element); }
+        .diagnostics-log-table td { padding: 8px 10px; border-bottom: 1px solid var(--border-element); font-family: 'JetBrains Mono', monospace; color: var(--text-secondary); }
+
+        /* TELEMETRY BADGES GENERAL PLATFORMS */
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.775rem; font-weight: 600; display: inline-block; }
+        .status-online { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+        .status-offline { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+        .status-closed { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+        .status-open { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+
+        .btn-danger-action { background: transparent; border: 1px solid var(--danger); color: var(--danger); font-weight: 600; border-radius: 6px; padding: 10px 16px; cursor: pointer; transition: all var(--transition-speed); font-size: 0.875rem; }
+        .btn-danger-action:hover { background: var(--danger); color: white; }
+
+        /* AUTHENTIC DIALOG POPUP LAYER MODALS */
+        .modal-overlay-backdrop { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 2000; display: flex; justify-content: center; align-items: center; padding: 20px; }
+        .modal-body-container { background: var(--bg-surface); border: 1px solid var(--border-element); border-radius: 12px; box-shadow: var(--shadow-md); padding: 30px; width: 100%; max-width: 400px; text-align: center; }
+        .modal-actions-flex-row { display: flex; gap: 10px; margin-top: 20px; }
+        .btn-modal-cancel { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid var(--border-element); background: var(--bg-core); color: var(--text-primary); font-weight: 600; cursor: pointer; }
+
+        /* PERSISTENT SYSTEM CORPORATE DIAGNOSTICS FOOTER */
+        footer.app-footer-bar { background: var(--bg-surface); border-top: 1px solid var(--border-element); padding: 8px 24px; display: flex; justify-content: space-between; align-items: center; font-size: 0.775rem; color: var(--text-muted); font-weight: 500; }
+        .footer-network-status-cluster { display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--text-secondary); }
+        .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+        /* PRINT INTERFACES STYLING OVERRIDES PIPELINES */
+        @media print {
+            body { background: white !important; color: black !important; }
+            header.app-header, .navigation-control-ribbon, .analytics-filter-controls-panel, .btn-add-row-action, .col-actions, .admin-action-element, footer.app-footer-bar, .btn-utility, #admin-unlock-btn, #admin-lock-btn { display: none !important; }
+            main.app-canvas { padding: 0 !important; }
+            .tab-content { display: none !important; }
+            #reports-section { display: block !important; opacity: 1 !important; }
+            .table-view-card-wrapper { border: none !important; box-shadow: none !important; }
+            .commercial-ledger-table th { background: #f1f5f9 !important; color: black !important; border-bottom: 2px solid #000 !important; }
+            .commercial-ledger-table td { border-bottom: 1px solid #ccc !important; padding: 8px !important; }
+            .cell-input { border: none !important; background: transparent !important; color: black !important; padding: 0 !important; -webkit-opacity: 1; opacity: 1; }
+        }
+    </style>
+</head>
+<body class="light-theme">
+
+    <!-- 1. AUTHENTIC WEB ENTRY ACCESS CONTROL OVERLAY -->
+    <div id="website-auth-overlay">
+        <div class="auth-card">
+            <div class="auth-logo"><i class="fa-solid fa-vault"></i></div>
+            <h2>Jawad Cash Ledger</h2>
+            <p class="text-muted text-sm">Commercial Security Validation Gateway Required</p>
+            <div class="pin-container">
+                <input type="password" id="website-pin-input" class="pin-input-field" maxlength="4" placeholder="••••" autocomplete="off" autofocus>
+                <div id="website-auth-error" class="error-prompt"><i class="fa-solid fa-circle-exclamation"></i> Access Denied: Invalid Authentication Code Parameter</div>
             </div>
-            
-            <div class="gatekeeper-footer">
-                <span class="badge-viewer-hint">Viewer Passcode: ****</span>
-                <span class="badge-admin-hint">Admin Passcode: ****</span>
-            </div>
+            <button id="website-auth-submit-btn" class="btn-primary">Verify Gateway Clearance</button>
         </div>
     </div>
 
-    <div id="app-container" class="app-container hide">
+    <!-- 2. MAIN SYSTEM MASTER ARCHITECTURE CONTAINER FRAME -->
+    <div id="app-container" class="hidden">
         
+        <!-- SYSTEM HEAD BANNER METRICS CLUSTER -->
         <header class="app-header">
-            <div class="header-left">
-                <div class="header-brand">
-                    <i class="fa-solid fa-wallet brand-icon"></i>
-                    <div>
-                        <h1>Jawad Cash Management</h1>
-                        <span class="sub-heading">Secure Cash Management System</span>
-                    </div>
-                </div>
+            <div class="brand-block">
+                <h1><i class="fa-solid fa-wallet"></i> Jawad Cash Management <span class="text-muted" style="font-size: 0.8rem; font-weight: 400;">v4.0 PRO</span></h1>
             </div>
-            
-            <div class="header-right">
-                <div class="meta-widgets">
-                    <div class="meta-widget">
-                        <i class="fa-regular fa-calendar-days"></i>
-                        <span id="live-date">July 15, 2026</span>
-                    </div>
-                    <div class="meta-widget">
-                        <i class="fa-regular fa-clock"></i>
-                        <span id="live-time">12:00:00 PM</span>
-                    </div>
+            <div class="system-telemetry-cluster">
+                <div id="access-badge" class="access-badge view-mode-badge">
+                    <i class="fa-solid fa-shield"></i> <span id="access-status-text">View Only Mode</span>
                 </div>
-                
-                <div class="access-status-indicator">
-                    <span id="status-badge" class="badge badge-viewer">
-                        <i class="fa-solid fa-eye"></i> Viewer Mode
-                    </span>
+                <div class="clock-display">
+                    <span id="live-date">---</span> &bull; <span id="live-time">---</span>
                 </div>
-                
-                <div class="header-actions">
-                    <button id="btn-lock-edit" class="btn-action btn-danger-soft hide" title="Lock Editing Immediately">
-                        <i class="fa-solid fa-lock"></i> Lock Editing
-                    </button>
-                    <button id="btn-theme-toggle" class="btn-action" title="Toggle Theme Interface">
-                        <i class="fa-solid fa-moon"></i>
-                    </button>
-                    <button id="btn-logout" class="btn-action btn-logout-icon" title="Logout System Session">
-                        <i class="fa-solid fa-power-off"></i>
-                    </button>
-                </div>
+                <button id="theme-toggle-btn" class="btn-utility" style="padding: 6px 10px;" title="Shift Visual Color Theme Scheme Models"><i class="fa-solid fa-moon"></i> <span>Dark Mode</span></button>
+                <button id="logout-btn" class="btn-utility" style="padding: 6px 10px; border-color: var(--danger); color: var(--danger);" title="Exit Active Working Matrix Runtime Session Context"><i class="fa-solid fa-power-off"></i></button>
             </div>
         </header>
 
-        <nav class="app-navigation">
-            <div class="nav-links">
-                <button class="nav-tab active" data-target="tab-dashboard">
-                    <i class="fa-solid fa-chart-line"></i> Dashboard
-                </button>
-                <button class="nav-tab" data-target="tab-cash-entry">
-                    <i class="fa-solid fa-money-bill-transfer"></i> Cash Entry
-                </button>
-                <button class="nav-tab" data-target="tab-reports">
-                    <i class="fa-solid fa-file-invoice-dollar"></i> Reports
-                </button>
-                <button class="nav-tab" data-target="tab-admin">
-                    <i class="fa-solid fa-user-shield"></i> Admin Panel
-                </button>
+        <!-- REGIONAL NAVIGATION COMMAND CONTROLS RIBBON -->
+        <div class="navigation-control-ribbon">
+            <div class="nav-tabs-group">
+                <button class="nav-btn active" data-target="dashboard-section"><i class="fa-solid fa-chart-pie"></i> Metrics Dashboard</button>
+                <button class="nav-btn" data-target="cash-entry-section"><i class="fa-solid fa-table-list"></i> Cash Entry Ledger</button>
+                <button class="nav-btn" data-target="reports-section"><i class="fa-solid fa-file-invoice-dollar"></i> Reports & Analytics</button>
+                <button class="nav-btn" data-target="admin-panel-section"><i class="fa-solid fa-sliders"></i> Admin Console</button>
             </div>
-            <div class="network-status" id="network-status-bar">
-                <span class="status-dot online"></span>
-                <span id="network-status-text">Cloud Sync Online</span>
+            <div class="action-utilities-group">
+                <button id="nav-btn-backup" class="btn-utility" title="Push Hardware Intercept Variables Out To Connected Storage Cloud Sync Bridges Pipeline"><i class="fa-solid fa-cloud-arrow-up"></i> Cloud Backup</button>
+                <button id="nav-btn-restore" class="btn-utility" title="Pull Most Contemporary Remote Cluster Remote State Database Snapshot State Context Logs Overrides"><i class="fa-solid fa-cloud-arrow-down"></i> Cloud Restore</button>
+                <button id="admin-unlock-btn" class="btn-utility" style="background-color: var(--accent-glow); border-color: var(--warning); color: var(--warning); font-weight: 600;"><i class="fa-solid fa-lock-open"></i> Elevate To Admin</button>
+                <button id="admin-lock-btn" class="btn-utility hidden" style="background-color: rgba(239, 68, 68, 0.1); border-color: var(--danger); color: var(--danger); font-weight: 600;"><i class="fa-solid fa-lock"></i> Rescind Privileges</button>
             </div>
-        </nav>
+        </div>
 
-        <main class="app-content-viewport">
-
-            <section id="tab-dashboard" class="tab-panel active">
-                <div class="dashboard-grid">
+        <!-- 3. MAIN WORKSPACE CANVAS LAYOUT LAYERS SECTION PLACEMENT -->
+        <main class="app-canvas">
+            
+            <!-- VIEW CONTEXT BOUNDARIES A: CORE METRICS DASHBOARD -->
+            <section id="dashboard-section" class="tab-content active">
+                <div class="metrics-cards-grid">
+                    <div class="metric-card accented">
+                        <h3>Entries Operational Index</h3>
+                        <div id="dash-today-entries-count" class="metric-value">0</div>
+                        <p class="text-muted" style="font-size: 0.8rem; font-weight: 500;">Valid log rows indexed relative to current calendar date signature parameters.</p>
+                    </div>
                     
-<!-- ==========================================
-     DASHBOARD CARDS (EXACT SEQUENTIAL ADDITIONS)
-     ========================================== -->
-<div class="cards-grid">
-    
-    <!-- === COMP 1 SECTION === -->
-    <div class="metric-card">
-        <h4>Comp 1 Large Cash</h4>
-        <div id="card-comp1-large" class="value">Rs. 0.00</div>
-    </div>
-    <div class="metric-card">
-        <h4>Comp 1 Small Cash</h4>
-        <div id="card-comp1-small" class="value">Rs. 0.00</div>
-    </div>
-    <div class="metric-card">
-        <h4>Comp 1 Total Cash</h4>
-        <div id="card-comp1-total-cash" class="value">Rs. 0.00</div>
-    </div>
-    <div class="metric-card">
-        <h4>Comp 1 Account</h4>
-        <div id="card-comp1-account" class="value">Rs. 0.00</div>
-    </div>
-    <div class="metric-card">
-        <h4>Comp 1 Total Cash with Account</h4>
-        <div id="card-comp1-total-with-account" class="value">Rs. 0.00</div>
-    </div>
-
-    <!-- === COMP 2 SECTION === -->
-    <div class="metric-card">
-        <h4>Comp 2 Large Cash</h4>
-        <div id="card-comp2-large" class="value">Rs. 0.00</div>
-    </div>
-    <div class="metric-card">
-        <h4>Comp 2 Small Cash</h4>
-        <div id="card-comp2-small" class="value">Rs. 0.00</div>
-    </div>
-    <div class="metric-card">
-        <h4>Comp 2 Total Cash</h4>
-        <div id="card-comp2-total-cash" class="value">Rs. 0.00</div>
-    </div>
-    <div class="metric-card">
-        <h4>Comp 2 Account</h4>
-        <div id="card-comp2-account" class="value">Rs. 0.00</div>
-    </div>
-    <div class="metric-card">
-        <h4>Comp 2 Total Cash with Account</h4>
-        <div id="card-comp2-total-with-account" class="value">Rs. 0.00</div>
-    </div>
-
-    <!-- === TODAY'S TOTAL SECTION === -->
-    <div class="metric-card">
-        <h4>Today's Total Large Cash</h4>
-        <div id="card-today-large" class="value">Rs. 0.00</div>
-    </div>
-    <div class="metric-card">
-        <h4>Today's Total Small Cash</h4>
-        <div id="card-today-small" class="value">Rs. 0.00</div>
-    </div>
-    <div class="metric-card">
-        <h4>Today's Total Cash</h4>
-        <div id="card-today-total-cash" class="value">Rs. 0.00</div>
-    </div>
-    <div class="metric-card">
-        <h4>Today's Account</h4>
-        <div id="card-today-account" class="value">Rs. 0.00</div>
-    </div>
-    <div class="metric-card">
-        <h4>Today's Total Cash with Account</h4>
-        <div id="card-today-total-with-account" class="value">Rs. 0.00</div>
-    </div>
-
-    <!-- 7. Overall Cash (Purana Card - Safe) -->
-    <div class="summary-card">
-        <div class="card-meta">
-            <span class="card-label">Overall Cash</span>
-            <div class="card-icon-wrapper bg-purple-soft">
-                <i class="fa-solid fa-vault"></i>
-            </div>
-        </div>
-        <h2 class="card-value currency-field" id="card-overall-cash">Rs. 0</h2>
-        <span class="card-footer-info">Lifetime accumulated total balance</span>
-    </div>
-
-    <!-- 8. Monthly Cash (Purana Card - Safe) -->
-    <div class="summary-card">
-        <div class="card-meta">
-            <span class="card-label">Monthly Cash</span>
-            <div class="card-icon-wrapper bg-yellow-soft">
-                <i class="fa-solid fa-calendar-check"></i>
-            </div>
-        </div>
-        <h2 class="card-value currency-field" id="card-monthly-cash">Rs. 0</h2>
-        <span class="card-footer-info" id="card-monthly-label">Current Month</span>
-    </div>
-
-    <!-- 9. Average Cash / Day (Purana Card - Safe) -->
-    <div class="summary-card">
-        <div class="card-meta">
-            <span class="card-label">Average Cash / Day</span>
-            <div class="card-icon-wrapper bg-teal-soft">
-                <i class="fa-solid fa-scale-balanced"></i>
-            </div>
-        </div>
-        <h2 class="card-value currency-field" id="card-average-cash">Rs. 0</h2>
-        <span class="card-footer-info">Evaluated over active journal entries</span>
-    </div>
-
-</div>
-                                      <div class="dashboard-split-layout">
-                    <div class="split-card flex-column">
-                        <div class="card-header">
-                            <h3><i class="fa-solid fa-chart-pie card-header-icon"></i> Cash Allocation Profile</h3>
-                        </div>
-                        <div class="card-body chart-container flex-center">
-                            <div class="allocation-visual-container">
-                                
-                                <!-- Comp 1 (Large Cash) -->
-                                <div class="allocation-row">
-                                    <span class="alloc-label">Comp 1 (Large Cash)</span>
-                                    <div class="alloc-progress-wrapper">
-                                        <div class="alloc-bar bg-primary" id="bar-comp1-large" style="width: 0%"></div>
-                                    </div>
-                                    <span class="alloc-pct" id="pct-comp1-large">0%</span>
-                                </div>
-
-                                <!-- Comp 1 (Small Cash) -->
-                                <div class="allocation-row">
-                                    <span class="alloc-label">Comp 1 (Small Cash)</span>
-                                    <div class="alloc-progress-wrapper">
-                                        <div class="alloc-bar bg-info" id="bar-comp1-small" style="width: 0%"></div>
-                                    </div>
-                                    <span class="alloc-pct" id="pct-comp1-small">0%</span>
-                                </div>
-
-                                <!-- Comp 1 (Account) -->
-                                <div class="allocation-row">
-                                    <span class="alloc-label">Comp 1 (Account)</span>
-                                    <div class="alloc-progress-wrapper">
-                                        <div class="alloc-bar bg-purple-soft" id="bar-comp1-account" style="width: 0%; background-color: #8a4af3 !important;"></div>
-                                    </div>
-                                    <span class="alloc-pct" id="pct-comp1-account">0%</span>
-                                </div>
-
-                                <!-- Comp 2 (Large Cash) -->
-                                <div class="allocation-row">
-                                    <span class="alloc-label">Comp 2 (Large Cash)</span>
-                                    <div class="alloc-progress-wrapper">
-                                        <div class="alloc-bar bg-success" id="bar-comp2-large" style="width: 0%"></div>
-                                    </div>
-                                    <span class="alloc-pct" id="pct-comp2-large">0%</span>
-                                </div>
-
-                                <!-- Comp 2 (Small Cash) -->
-                                <div class="allocation-row">
-                                    <span class="alloc-label">Comp 2 (Small Cash)</span>
-                                    <div class="alloc-progress-wrapper">
-                                        <div class="alloc-bar bg-warning" id="bar-comp2-small" style="width: 0%"></div>
-                                    </div>
-                                    <span class="alloc-pct" id="pct-comp2-small">0%</span>
-                                </div>
-
-                                <!-- Comp 2 (Account) -->
-                                <div class="allocation-row">
-                                    <span class="alloc-label">Comp 2 (Account)</span>
-                                    <div class="alloc-progress-wrapper">
-                                        <div class="alloc-bar bg-purple-soft" id="bar-comp2-account" style="width: 0%; background-color: #a066ff !important;"></div>
-                                    </div>
-                                    <span class="alloc-pct" id="pct-comp2-account">0%</span>
-                                </div>
-
-                            </div> <!-- Closes allocation-visual-container -->
-                        </div> <!-- Closes card-body -->
-                    </div> <!-- Closes split-card -->
-
-                    <div class="split-card flex-column">
-                        <div class="card-header">
-                            <h3><i class="fa-solid fa-clock-rotate-left card-header-icon"></i> Recent Entry Logs</h3>
-                        </div>
-                        <div class="card-body overflow-y">
-                            <ul class="recent-logs-list" id="recent-logs-container">
-                                <li class="log-empty-state">No records registered in storage yet</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div> <!-- Closes dashboard-split-layout -->
-            </section>
-
-            <section id="tab-cash-entry" class="tab-panel">
-                <div class="cash-entry-controls">
-                    <div class="search-filter-bar">
-                        <div class="form-group flex-1">
-                            <label for="search-date-filter"><i class="fa-solid fa-calendar-day"></i> Filter by Date</label>
-                            <input type="date" id="search-date-filter" class="form-control">
-                        </div>
-                        <div class="form-group flex-1">
-                            <label for="search-month-filter"><i class="fa-solid fa-calendar-week"></i> Filter Month</label>
-                            <select id="search-month-filter" class="form-control">
-                                <option value="">All Months</option>
-                                <option value="01">January</option>
-                                <option value="02">February</option>
-                                <option value="03">March</option>
-                                <option value="04">April</option>
-                                <option value="05">May</option>
-                                <option value="06">June</option>
-                                <option value="07">July</option>
-                                <option value="08">August</option>
-                                <option value="09">September</option>
-                                <option value="10">October</option>
-                                <option value="11">November</option>
-                                <option value="12">December</option>
-                            </select>
-                        </div>
-                        <div class="form-group flex-1">
-                            <label for="search-year-filter"><i class="fa-solid fa-calendar-days"></i> Filter Year</label>
-                            <select id="search-year-filter" class="form-control">
-                                <option value="">All Years</option>
-                                <option value="2024">2024</option>
-                                <option value="2025">2025</option>
-                                <option value="2026" selected>2026</option>
-                                <option value="2027">2027</option>
-                                <option value="2028">2028</option>
-                            </select>
-                        </div>
-                        <div class="control-actions flex-end">
-                            <button id="btn-clear-filters" class="btn-secondary" title="Clear Filters">
-                                <i class="fa-solid fa-rotate-left"></i> Reset Filter
-                            </button>
-                            <button id="btn-add-entry" class="btn-primary" disabled title="Admin Authorization Required to Insert Rows">
-                                <i class="fa-solid fa-plus"></i> Add Entry Row
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="table-container">
-                    <table class="cash-ledger-table" id="cash-ledger-table">
-                        <thead>
-                            <tr class="header-grouping">
-                                <th rowspan="2" class="col-sno text-center">S.No</th>
-                                <th rowspan="2" class="col-date">Date</th>
-                                <th rowspan="2" class="col-day">Day</th>
-                                <th colspan="2" class="col-group text-center comp-1-color">Comp 1</th>
-                                <th colspan="2" class="col-group text-center comp-2-color">Comp 2</th>
-                                <th rowspan="2" class="col-remarks">Remarks</th>
-                                <th rowspan="2" class="col-actions text-center edit-elements-only">Actions</th>
-                            </tr>
-                            <tr class="header-sub-grouping">
-                                <th class="col-sub comp-1-color text-right">Large Cash</th>
-                                <th class="col-sub comp-1-color text-right">Small Cash</th>
-                                <th class="col-sub comp-2-color text-right">Large Cash</th>
-                                <th class="col-sub comp-2-color text-right">Small Cash</th>
-                            </tr>
-                        </thead>
-                        <tbody id="ledger-rows-body">
-                            <tr class="table-empty-row">
-                                <td colspan="10" class="text-center">Loading Cash Ledger Records...</td>
-                            </tr>
-                        </tbody>
-                        <tfoot>
-                            <tr class="total-row row-today">
-                                <td colspan="3" class="text-bold text-center label-cell">
-                                    <span class="badge badge-accent">TODAY</span> Aggregated
-                                </td>
-                                <td id="today-comp1-large" class="text-right text-bold font-mono">0.00</td>
-                                <td id="today-comp1-small" class="text-right text-bold font-mono">0.00</td>
-                                <td id="today-comp2-large" class="text-right text-bold font-mono">0.00</td>
-                                <td id="today-comp2-small" class="text-right text-bold font-mono">0.00</td>
-                                <td colspan="2" class="compound-total-label">
-                                    <div class="totals-compound-display">
-                                        <span>Total Comp 1: <strong id="today-comp1-total" class="font-mono">0.00</strong></span>
-                                        <span>Total Comp 2: <strong id="today-comp2-total" class="font-mono">0.00</strong></span>
-                                        <span class="grand-highlight">Today's Grand Total: <strong id="today-grand-total" class="font-mono">0.00</strong></span>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr class="total-row row-overall">
-                                <td colspan="3" class="text-bold text-center label-cell">
-                                    <span class="badge badge-primary">OVERALL</span> Aggregated
-                                </td>
-                                <td id="overall-comp1-large" class="text-right text-bold font-mono">0.00</td>
-                                <td id="overall-comp1-small" class="text-right text-bold font-mono">0.00</td>
-                                <td id="overall-comp2-large" class="text-right text-bold font-mono">0.00</td>
-                                <td id="overall-comp2-small" class="text-right text-bold font-mono">0.00</td>
-                                <td colspan="2" class="compound-total-label">
-                                    <div class="totals-compound-display">
-                                        <span>Total Comp 1: <strong id="overall-comp1-total" class="font-mono">0.00</strong></span>
-                                        <span>Total Comp 2: <strong id="overall-comp2-total" class="font-mono">0.00</strong></span>
-                                        <span class="grand-highlight">Overall Grand Total: <strong id="overall-grand-total" class="font-mono">0.00</strong></span>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tfoot>
-                    </table>
-                </div>
-            </section>
-
-            <section id="tab-reports" class="tab-panel">
-                <div class="report-dashboard-grid">
-                    <div class="report-controls-card">
-                        <h3><i class="fa-solid fa-sliders"></i> Report Filters</h3>
-                        <hr class="card-separator">
-                        <div class="form-group mb-4">
-                            <label for="report-month-filter">Select Targeted Month</label>
-                            <select id="report-month-filter" class="form-control">
-                                <option value="01">January</option>
-                                <option value="02">February</option>
-                                <option value="03">March</option>
-                                <option value="04">April</option>
-                                <option value="05">May</option>
-                                <option value="06">June</option>
-                                <option value="07">July</option>
-                                <option value="08">August</option>
-                                <option value="09">September</option>
-                                <option value="10">October</option>
-                                <option value="11">November</option>
-                                <option value="12">December</option>
-                            </select>
-                        </div>
-                        <div class="form-group mb-4">
-                            <label for="report-year-filter">Select Targeted Year</label>
-                            <select id="report-year-filter" class="form-control">
-                                <option value="2024">2024</option>
-                                <option value="2025">2025</option>
-                                <option value="2026" selected>2026</option>
-                                <option value="2027">2027</option>
-                                <option value="2028">2028</option>
-                            </select>
-                        </div>
-                        
-                        <div class="flex-column gap-2 mt-auto">
-                            <button id="btn-print-report" class="btn-primary btn-block">
-                                <i class="fa-solid fa-print"></i> Print Full Report
-                            </button>
-                            <button id="btn-export-csv" class="btn-success btn-block">
-                                <i class="fa-solid fa-file-csv"></i> Export to CSV
-                            </button>
-                            <button id="btn-export-xlsx" class="btn-info btn-block" disabled title="Excel native generation planned for future versions">
-                                <i class="fa-regular fa-file-excel"></i> Export Excel (Future)
-                            </button>
+                    <div class="metric-card">
+                        <h3>Company 1 Balances (Today)</h3>
+                        <div id="dash-c1-total-account" class="metric-value" style="color: var(--blue-link);">PKR 0.00</div>
+                        <div class="metric-sub-rows-stack">
+                            <div class="metric-sub-row"><span>Large Denom Cash:</span> <span id="dash-c1-large">0.00</span></div>
+                            <div class="metric-sub-row"><span>Small Denom Cash:</span> <span id="dash-c1-small">0.00</span></div>
+                            <div class="metric-sub-row" style="font-weight:600;"><span>Total Hard Cash:</span> <span id="dash-c1-total-cash">0.00</span></div>
                         </div>
                     </div>
 
-                    <div class="report-summary-display">
-                        <div class="report-display-header">
-                            <h3><i class="fa-solid fa-file-invoice"></i> Dynamic Summary Statement</h3>
-                            <span id="report-display-period-text" class="period-text-badge">Statement: July 2026</span>
+                    <div class="metric-card">
+                        <h3>Company 2 Balances (Today)</h3>
+                        <div id="dash-c2-total-account" class="metric-value" style="color: var(--blue-link);">PKR 0.00</div>
+                        <div class="metric-sub-rows-stack">
+                            <div class="metric-sub-row"><span>Large Denom Cash:</span> <span id="dash-c2-large">0.00</span></div>
+                            <div class="metric-sub-row"><span>Small Denom Cash:</span> <span id="dash-c2-small">0.00</span></div>
+                            <div class="metric-sub-row" style="font-weight:600;"><span>Total Hard Cash:</span> <span id="dash-c2-total-cash">0.00</span></div>
                         </div>
-                        <div class="report-display-body">
-                            <div class="statement-matrix">
-                                <div class="statement-row">
-                                    <div class="statement-col-title">Comp 1 Accumulated Total</div>
-                                    <div class="statement-col-value font-mono" id="report-sum-comp1">Rs. 0.00</div>
-                                </div>
-                                <div class="statement-row">
-                                    <div class="statement-col-title">Comp 2 Accumulated Total</div>
-                                    <div class="statement-col-value font-mono" id="report-sum-comp2">Rs. 0.00</div>
-                                </div>
-                                <hr class="matrix-divider">
-                                <div class="statement-row grand-highlight">
-                                    <div class="statement-col-title text-bold">Monthly Grand Total</div>
-                                    <div class="statement-col-value font-mono text-bold" id="report-sum-grand">Rs. 0.00</div>
-                                </div>
-                            </div>
-                            
-                            <div class="mini-table-wrapper mt-4">
-                                <table class="mini-data-table" id="report-mini-table">
-                                    <thead>
-                                        <tr>
-                                            <th>S.No</th>
-                                            <th>Date</th>
-                                            <th>Day</th>
-                                            <th class="text-right">Total Comp 1</th>
-                                            <th class="text-right">Total Comp 2</th>
-                                            <th class="text-right">Grand Total</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="report-mini-rows">
-                                        <tr>
-                                            <td colspan="6" class="text-center text-muted">Filter criteria has no results generated.</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
+                    </div>
+
+                    <div class="metric-card accented" style="border-left-color: var(--success);">
+                        <h3>Grand Combined Pipeline (Today)</h3>
+                        <div id="dash-grand-today-account" class="metric-value" style="color: var(--success);">PKR 0.00</div>
+                        <div class="metric-sub-rows-stack">
+                            <div class="metric-sub-row" style="font-weight:600;"><span>Grand Total Cash Assets:</span> <span id="dash-grand-today-cash" style="color:var(--text-primary);">0.00</span></div>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <section id="tab-admin" class="tab-panel">
-                <div class="admin-grid">
-                    <div class="admin-card">
-                        <div class="card-header">
-                            <h3><i class="fa-solid fa-shield-halved"></i> Access Credentials Management</h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="form-group mb-3">
-                                <label for="admin-viewer-passcode-field">Edit Viewer Passcode</label>
-                                <div class="flex-row gap-2">
-                                    <input type="password" id="admin-viewer-passcode-field" class="form-control" placeholder="••••" disabled>
-                                    <button class="btn-action btn-pwd-reveal" data-target="admin-viewer-passcode-field"><i class="fa-solid fa-eye"></i></button>
-                                </div>
-                            </div>
-                            <div class="form-group mb-4">
-                                <label for="admin-admin-passcode-field">Edit Admin Passcode</label>
-                                <div class="flex-row gap-2">
-                                    <input type="password" id="admin-admin-passcode-field" class="form-control" placeholder="••••" disabled>
-                                    <button class="btn-action btn-pwd-reveal" data-target="admin-admin-passcode-field"><i class="fa-solid fa-eye"></i></button>
-                                </div>
-                            </div>
-                            <button id="btn-update-passcodes" class="btn-primary btn-block" disabled>
-                                <i class="fa-solid fa-floppy-disk"></i> Commit New Credentials
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="admin-card">
-                        <div class="card-header">
-                            <h3><i class="fa-solid fa-database"></i> Backup & Disaster Recovery</h3>
-                        </div>
-                        <div class="card-body flex-column gap-3">
-                            <div>
-                                <p class="admin-help-text">Execute immediate JSON dumps of physical application states for local archiving. Store this in your secure directories.</p>
-                                <button id="btn-backup-local" class="btn-success btn-block" disabled>
-                                    <i class="fa-solid fa-download"></i> Backup Cash Database (JSON)
-                                </button>
-                            </div>
-                            <hr class="card-separator">
-                            <div>
-                                <p class="admin-help-text">Inject an authenticated transaction history backup. Ensure file format is compatible JSON prior to execution.</p>
-                                <div class="file-restore-wrapper">
-                                    <input type="file" id="file-restore-input" class="hide" accept=".json" disabled>
-                                    <button id="btn-trigger-restore" class="btn-info btn-block" disabled>
-                                        <i class="fa-solid fa-upload"></i> Restore Backup File
-                                    </button>
-                                </div>
-                            </div>
-                            <hr class="card-separator">
-                            <div>
-                                <p class="admin-help-text danger-text">Irreversibly delete current registers. All local-storage tables & Firebase Firestore segments will clear.</p>
-                                <button id="btn-factory-reset" class="btn-danger btn-block" disabled>
-                                    <i class="fa-solid fa-trash-can"></i> Purge Entire Database
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="admin-card">
-                        <div class="card-header">
-                            <h3><i class="fa-solid fa-cloud-arrow-up"></i> Cloud Engine Status</h3>
-                        </div>
-                        <div class="card-body flex-column">
-                            <div class="engine-status-block mb-4">
-                                <div class="engine-indicator">
-                                    <span class="engine-label">Firestore Realtime Integration</span>
-                                    <span id="firestore-engine-status" class="badge badge-warning">Unconfigured</span>
-                                </div>
-                                <p class="admin-help-text mt-2">To configure Firebase cloud syncing, make sure your configurations are injected inside <code>firebase-config.js</code> file.</p>
-                            </div>
-                            
-                            <div class="closing-protocol-block mt-auto">
-                                <div class="card-header border-none px-0 pt-0">
-                                    <h3><i class="fa-solid fa-calendar-minus"></i> Ledger Closing Protocols</h3>
-                                </div>
-                                <p class="admin-help-text mb-3">Seal all entries recorded today. Once locked, cells become permanently locked for modification unless Admin reopens the records.</p>
-                                <button id="btn-close-day" class="btn-danger-soft btn-block" disabled>
-                                    <i class="fa-solid fa-folder-closed"></i> Execute Day Closing Protocol
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+            <!-- VIEW CONTEXT BOUNDARIES B: CORE CASH LEDGER SPREADSHEET MATRIX TABLE -->
+            <section id="cash-entry-section" class="tab-content">
+                <div id="admin-restricted-view-banner" class="restricted-view-banner">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span><strong>Security Matrix Restriction Notice:</strong> App operational tier running in Read-Only enforcement mode. Administrative structural manipulation privileges are required to create or alter spreadsheet values rows records.</span>
                 </div>
 
-                <div class="admin-log-panel mt-4">
-                    <div class="card-header justify-between">
-                        <h3><i class="fa-solid fa-user-clock"></i> Access Login Footprints History</h3>
-                        <button id="btn-clear-history" class="btn-secondary btn-sm" disabled>
-                            <i class="fa-solid fa-broom"></i> Clear Trace Logs
-                        </button>
+                <div class="table-view-card-wrapper">
+                    <div class="table-header-action-bar">
+                        <div class="table-title"><i class="fa-solid fa-money-bill-transfer"></i> Operational Accounting Ledger Entries Engine</div>
+                        <div class="text-muted text-xs">All modifications are written directly down to immediate fault-resilient storage caching indexes layers.</div>
                     </div>
-                    <div class="log-table-wrapper">
-                        <table class="log-table" id="history-log-table">
+                    <div class="table-responsive-viewport">
+                        <table class="commercial-ledger-table">
                             <thead>
                                 <tr>
-                                    <th>Authentication Date</th>
-                                    <th>Timestamp</th>
-                                    <th>Terminal Browser / Platform Metadata</th>
-                                    <th>Authorized Access Role</th>
-                                    <th>Status Details</th>
+                                    <th rowspan="2" class="col-sno center-text">S.No</th>
+                                    <th rowspan="2" class="col-date">Log Date</th>
+                                    <th rowspan="2" class="col-day center-text">Weekday</th>
+                                    <th colspan="3" class="col-group-header" style="background-color: rgba(59,130,246,0.05);">Company 1 Ledger Allocation Matrix</th>
+                                    <th colspan="3" class="col-group-header" style="background-color: rgba(16,185,129,0.05);">Company 2 Ledger Allocation Matrix</th>
+                                    <th rowspan="2" class="col-remarks">Remarks & Processing Context Signatures</th>
+                                    <th rowspan="2" class="col-actions admin-action-element center-text">Actions</th>
+                                </tr>
+                                <tr>
+                                    <th style="background-color: rgba(59,130,246,0.02);">Large Cash</th>
+                                    <th style="background-color: rgba(59,130,246,0.02);">Small Cash</th>
+                                    <th style="background-color: rgba(59,130,246,0.02); color:var(--blue-link);">Account Index</th>
+                                    <th style="background-color: rgba(16,185,129,0.02);">Large Cash</th>
+                                    <th style="background-color: rgba(16,185,129,0.02);">Small Cash</th>
+                                    <th style="background-color: rgba(16,185,129,0.02); color:var(--blue-link);">Account Index</th>
                                 </tr>
                             </thead>
-                            <tbody id="history-log-body">
+                            <tbody id="ledger-rows-container">
+                                <!-- Dynamic runtime injection node target array rows mapping location -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div>
+                        <button id="table-add-row-btn" class="btn-add-row-action admin-mutable" disabled><i class="fa-solid fa-square-plus"></i> Append New Transaction Entry Row Pipeline Element</button>
+                    </div>
+                </div>
+
+                <!-- FLOATING STATIC LEDGER TOTAL COMPILATION PANELS -->
+                <div class="table-view-card-wrapper">
+                    <div class="table-header-action-bar" style="background:var(--bg-core); border-bottom:none; padding:12px 20px;"><span class="table-title" style="font-size:0.9rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted);"><i class="fa-solid fa-calculator"></i> Realtime Consolidated Accounting Balances Stack</span></div>
+                    <div class="accounting-summary-footer-strip">
+                        <div class="summary-block-column">
+                            <h4><i class="fa-solid fa-calendar-day"></i> Today's Ledger Section Subtotals</h4>
+                            <div class="summary-calculation-matrix">
+                                <div class="summary-matrix-item"><span>Comp 1 Cash (Large + Small):</span> <span id="tot-t-c1-cash">0.00</span></div>
+                                <div class="summary-matrix-item"><span>Comp 1 Account Index Allocation:</span> <span id="tot-t-c1-account" class="text-blue">0.00</span></div>
+                                <div class="summary-matrix-item"><span>Comp 2 Cash (Large + Small):</span> <span id="tot-t-c2-cash">0.00</span></div>
+                                <div class="summary-matrix-item"><span>Comp 2 Account Index Allocation:</span> <span id="tot-t-c2-account" class="text-blue">0.00</span></div>
+                                <div class="summary-matrix-item" style="border-top:1px solid var(--border-element); padding-top:4px;"><span>Consolidated Cash Balances Total:</span> <span id="tot-t-grand-cash">0.00</span></div>
+                                <div class="summary-matrix-item grand-highlight"><span>Grand Total Assets Including Accounts:</span> <span id="tot-t-grand-with-account">0.00</span></div>
+                            </div>
+                        </div>
+                        <div class="summary-block-column">
+                            <h4><i class="fa-solid fa-database"></i> Cumulative Overall Balances (All History)</h4>
+                            <div class="summary-calculation-matrix">
+                                <div class="summary-matrix-item"><span>Comp 1 Cash (Large + Small):</span> <span id="tot-o-c1-cash">0.00</span></div>
+                                <div class="summary-matrix-item"><span>Comp 1 Account Index Allocation:</span> <span id="tot-o-c1-account" class="text-blue">0.00</span></div>
+                                <div class="summary-matrix-item"><span>Comp 2 Cash (Large + Small):</span> <span id="tot-o-c2-cash">0.00</span></div>
+                                <div class="summary-matrix-item"><span>Comp 2 Account Index Allocation:</span> <span id="tot-o-c2-account" class="text-blue">0.00</span></div>
+                                <div class="summary-matrix-item" style="border-top:1px solid var(--border-element); padding-top:4px;"><span>Consolidated Cash Balances Total:</span> <span id="tot-o-grand-cash">0.00</span></div>
+                                <div class="summary-matrix-item grand-highlight" style="color:var(--success);"><span>Grand Total Assets Including Accounts:</span> <span id="tot-o-grand-with-account">0.00</span></div>
+                            </div>
+                        </div>
+                        <div class="summary-block-column" style="font-size:0.8rem; color:var(--text-secondary); display:flex; flex-direction:column; justify-content:center; background:var(--bg-core); padding:16px; border-radius:6px; border:1px solid var(--border-element);">
+                            <p style="margin-bottom:6px;"><i class="fa-solid fa-info-circle" style="color:var(--blue-link);"></i> <strong>Calculation Methodology:</strong> Subtotals dynamically recalculate on every structural state change event loop invocation cycle.</p>
+                            <p>Hard Cash values are generated by mapping the operational logic matrix: <span style="font-family:'JetBrains Mono',monospace;">(Large Denomination + Small Denomination)</span> for each business unit profile independently.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW CONTEXT BOUNDARIES C: REPORTS ARCHIVE & ANALYTICS PIPELINES -->
+            <section id="reports-section" class="tab-content">
+                <div class="analytics-filter-controls-panel">
+                    <div class="filter-control-node">
+                        <label>Calendar Date Target</label>
+                        <input type="date" id="filter-date-input" class="filter-input-element">
+                    </div>
+                    <div class="filter-control-node">
+                        <label>Target Month Segment</label>
+                        <select id="filter-month-input" class="filter-input-element">
+                            <option value="">-- View All Months --</option>
+                            <option value="01">January</option><option value="02">February</option><option value="03">March</option>
+                            <option value="04">April</option><option value="05">May</option><option value="06">June</option>
+                            <option value="07">July</option><option value="08">August</option><option value="09">September</option>
+                            <option value="10">October</option><option value="11">November</option><option value="12">December</option>
+                        </select>
+                    </div>
+                    <div class="filter-control-node">
+                        <label>Target Year Parameter</label>
+                        <input type="number" id="filter-year-input" class="filter-input-element" placeholder="e.g. 2026" min="2020" max="2050">
+                    </div>
+                    <button id="filter-clear-btn" class="btn-inline-action" style="padding: 10px 14px;"><i class="fa-solid fa-filter-circle-xmark"></i> Clear Filters</button>
+                    <div style="flex:1; display:flex; justify-content:flex-end; gap:8px;">
+                        <button id="report-csv-btn" class="btn-utility" style="background-color: var(--accent-glow);"><i class="fa-solid fa-file-csv"></i> Packaging Master Data CSV</button>
+                        <button id="report-print-btn" class="btn-utility"><i class="fa-solid fa-print"></i> Trigger Print / PDF Export</button>
+                    </div>
+                </div>
+
+                <!-- RENDER TARGET FOR SYSTEM MASTER REPORTS DATA STREAM GENERATOR -->
+                <div class="table-view-card-wrapper">
+                    <div class="table-header-action-bar"><div class="table-title"><i class="fa-solid fa-chart-line"></i> Filtered Analytical Output Stream Logs</div></div>
+                    <div class="table-responsive-viewport">
+                        <table class="commercial-ledger-table" style="font-size:0.85rem;">
+                            <thead>
                                 <tr>
-                                    <td colspan="5" class="text-center text-muted">No historical session footprints captured on this node yet.</td>
+                                    <th>No</th><th>Transaction Date</th><th>Weekday</th>
+                                    <th>C1 Large</th><th>C1 Small</th><th class="text-blue">C1 Account</th>
+                                    <th>C2 Large</th><th>C2 Small</th><th class="text-blue">C2 Account</th>
+                                    <th style="text-align:left;">Operator Notes Signature</th>
                                 </tr>
+                            </thead>
+                            <tbody id="report-rows-container">
+                                <!-- Target node loop for analytics outputs generation -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- DYNAMICALLY COMPILED HISTORICAL MONTHLY AGGREGATIONS INDEX GRID -->
+                <h3><i class="fa-solid fa-cubes-stacked" style="color:var(--blue-link); margin-right:6px;"></i> Automated Month-Block Compilation Matrices</h3>
+                <div id="monthly-summary-cards-grid" class="monthly-summary-cards-grid">
+                    <!-- Target location placeholder nodes arrays generated by ui reporting routines -->
+                </div>
+            </section>
+
+            <!-- VIEW CONTEXT BOUNDARIES D: CORE SYSTEM ADMINISTRATIVE CONTROL CONSOLE -->
+            <section id="admin-panel-section" class="tab-content">
+                <div class="admin-console-grid">
+                    
+                    <!-- SECURITY RE-AUTHORIZATION LOGIC CREDENTIALS CONFIG CARD -->
+                    <div class="admin-console-section-card">
+                        <h3><i class="fa-solid fa-key"></i> System Gatekeeper Validation Credentials</h3>
+                        
+                        <div class="admin-setting-control-row">
+                            <div class="admin-setting-info-text">
+                                <h5>Level 1 Website Access PIN</h5>
+                                <p class="text-muted">General security checkpoint token applied during gateway loading interfaces.</p>
+                            </div>
+                            <div class="input-inline-action-lock-group">
+                                <input type="password" id="admin-set-web-pin" class="admin-mutable" maxlength="4" placeholder="••••" disabled>
+                                <button id="btn-save-web-pin" class="btn-inline-action admin-mutable" disabled>Upgrade</button>
+                            </div>
+                        </div>
+
+                        <div class="admin-setting-control-row">
+                            <div class="admin-setting-info-text">
+                                <h5>Level 2 Administrative Management Write PIN</h5>
+                                <p class="text-muted">Elevated access key parameters controlling full ledger mutability writes blocks.</p>
+                            </div>
+                            <div class="input-inline-action-lock-group">
+                                <input type="password" id="admin-set-adm-pin" class="admin-mutable" maxlength="4" placeholder="••••" disabled>
+                                <button id="btn-save-adm-pin" class="btn-inline-action admin-mutable" disabled>Upgrade</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CENTRALIZED SYNC ENGINE REALTIME TELEMETRY SYSTEM CONSOLE CARD -->
+                    <div class="admin-console-section-card">
+                        <h3><i class="fa-solid fa-cloud-bolt"></i> Cloud Storage Network Synchronization Channel</h3>
+                        
+                        <!-- GOOGLE PROFILE CONTROL COMPONENT BLOCKS MODULE -->
+                        <div id="google-user-profile-info" class="user-auth-profile-card hidden">
+                            <div class="user-avatar-frame"><img id="google-user-avatar" src="" alt="Profile Target Frame"></div>
+                            <div class="profile-data-metrics">
+                                <h4 id="google-user-name">---</h4>
+                                <p id="google-user-email">---</p>
+                            </div>
+                        </div>
+                        <button id="firebase-google-login-btn" class="btn-primary" style="background:#4285f4; margin-bottom:16px;"><i class="fa-brands fa-google"></i> Establish Google Identity Profile Channel</button>
+
+                        <div class="admin-setting-control-row" style="background:var(--bg-core); padding:10px; border-radius:6px; border:1px solid var(--border-element);">
+                            <div class="admin-setting-info-text">
+                                <h5>Remote Sync Channel State:</h5>
+                                <p id="lbl-backup-status-text" class="text-muted">Awaiting local runtime network identification updates loop parameters...</p>
+                            </div>
+                            <div><span id="cloud-status-badge" class="badge status-offline">Offline</span></div>
+                        </div>
+                        <p class="text-muted" style="font-size: 0.775rem; margin-top: 6px;">Latest Cloud Snapshot Frame Match: <span id="lbl-last-backup-timestamp" style="font-weight: 600; color: var(--text-primary);">Never</span></p>
+
+                        <div style="display: flex; gap: 8px; margin-top: 16px;">
+                            <button id="admin-btn-manual-backup" class="btn-inline-action admin-mutable" style="flex:1;" disabled><i class="fa-solid fa-cloud-arrow-up"></i> Manual Push</button>
+                            <button id="admin-btn-manual-restore" class="btn-inline-action admin-mutable" style="flex:1;" disabled><i class="fa-solid fa-cloud-arrow-down"></i> Manual Pull</button>
+                        </div>
+                    </div>
+
+                    <!-- BUSINESS SEGMENT BALANCES WRITING LOCK ENGINE MANAGEMENT -->
+                    <div class="admin-console-section-card">
+                        <h3><i class="fa-solid fa-calendar-minus"></i> Business Segment Day-End Ledger Closing Engine</h3>
+                        <div class="admin-setting-control-row">
+                            <div class="admin-setting-info-text">
+                                <h5>Daily Bookkeeping Session State</h5>
+                                <p class="text-muted">Locking sessions prevents standard variables mapping row updates overrides execution failures.</p>
+                            </div>
+                            <div><span id="day-closing-status-badge" class="badge status-open">Ledger Unlocked (Open)</span></div>
+                        </div>
+                        <div style="display:flex; gap:10px; margin-top:14px;">
+                            <button id="admin-btn-close-day" class="btn-inline-action admin-mutable" style="background:var(--accent-glow); border-color:var(--danger); color:var(--danger); font-weight:600; flex:1;" disabled><i class="fa-solid fa-calendar-lock"></i> Finalize & Close Today's Books</button>
+                            <button id="admin-btn-reopen-day" class="btn-inline-action admin-mutable hidden" style="border-color:var(--success); color:var(--success); font-weight:600; flex:1;" disabled><i class="fa-solid fa-calendar-check"></i> Lift Close Rules Session</button>
+                        </div>
+                    </div>
+
+                    <!-- HARD HARDWARE RECOVERY METRICS STORAGE ENGINES CONSOLE CARD -->
+                    <div class="admin-console-section-card">
+                        <h3><i class="fa-solid fa-triangle-exclamation" style="color:var(--danger);"></i> Diagnostics & Hard System Data Safety Actions</h3>
+                        <p class="text-muted" style="font-size:0.85rem; margin-bottom:16px;">Perform raw extraction or force clear persistent memory blocks buffers indexes parameters loops values. Actions are irreversible.</p>
+                        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                            <button id="admin-btn-export-raw" class="btn-inline-action" style="flex:1; min-width:200px;"><i class="fa-solid fa-file-code"></i> Extract Raw Offline JSON Stack</button>
+                            <button id="admin-btn-hard-reset" class="btn-danger-action admin-mutable" style="flex:1; min-width:200px;" disabled><i class="fa-solid fa-dumpster-fire"></i> Purge Hardware Storage Nodes Wipes</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- REALTIME REGISTRY SESSIONS VISUAL TRACKER LOG VIEW ROW ELEMENT -->
+                <div class="table-view-card-wrapper" style="margin-top: 24px;">
+                    <div class="table-header-action-bar">
+                        <div class="table-title"><i class="fa-solid fa-terminal"></i> Centralized Access Authentication & Environment Operations Activity Monitor Logs</div>
+                    </div>
+                    <div class="diagnostics-log-table-wrapper">
+                        <table class="diagnostics-log-table">
+                            <thead>
+                                <tr><th>Log Date</th><th>Session Time</th><th>Telemetry Frame</th><th>Device Node Agent Metadata Metrics Signature</th></tr>
+                            </thead>
+                            <tbody id="login-history-rows-container">
+                                <!-- Dynamic rows trace records target injection location -->
                             </tbody>
                         </table>
                     </div>
                 </div>
             </section>
         </main>
-    </div>
 
-    <div id="passcode-modal" class="modal-overlay hide">
-        <div class="modal-card">
-            <div class="modal-header">
-                <h3><i class="fa-solid fa-lock-open text-primary"></i> Upgrade to Admin Role</h3>
-                <button class="btn-modal-close modal-dismiss-trigger"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div class="modal-body">
-                <p class="modal-info-txt">Enter your 4-digit Administrator Key Code to unlock writing, editing, configurations, backing-up or system resets.</p>
-                <div class="form-group mb-3">
-                    <input type="password" id="modal-passcode-field" class="form-control text-center text-large" placeholder="••••" maxlength="8">
-                    <span id="modal-error-text" class="error-text hide text-center mt-2">Passcode validation rejected.</span>
+        <!-- 4. DIALOG LAYER INTERACTIVE LEVEL 2 SECURITY PROMPT MODALS DISPLAY -->
+        <div id="admin-auth-modal" class="modal-overlay-backdrop hidden">
+            <div class="modal-body-container">
+                <div class="auth-logo" style="color:var(--warning);"><i class="fa-solid fa-shield-halved"></i></div>
+                <h3>Elevated Privilege Verification</h3>
+                <p class="text-muted text-sm" style="margin-bottom: 16px;">Provide the Administrative PIN credential to unlock full write capabilities.</p>
+                <input type="password" id="admin-pin-input" class="pin-input-field" maxlength="4" placeholder="••••" autocomplete="off">
+                <div id="admin-auth-error" class="error-prompt"><i class="fa-solid fa-circle-exclamation"></i> Security Rejection: Elevation PIN Input Mismatch</div>
+                <div class="modal-actions-flex-row">
+                    <button id="admin-auth-cancel" class="btn-modal-cancel">Abort</button>
+                    <button id="admin-auth-submit" class="btn-primary" style="background:var(--warning); flex:1;">Grant Write Access</button>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button class="btn-secondary modal-dismiss-trigger">Cancel</button>
-                <button id="btn-modal-verify" class="btn-primary">Elevate Permissions</button>
-            </div>
         </div>
+
+        <!-- 5. SYSTEM CORPORATE PERSISTENT STATUS ARCHITECTURE FOOTER STRIP -->
+        <footer class="app-footer-bar">
+            <div>&copy; 2026 JCM Systems &bull; Enterprise Cash Ledger Architecture Core Frameworks Eng. All Rights Reserved.</div>
+            <div class="footer-network-status-cluster">
+                <span id="footer-connection-dot" class="dot status-offline"></span>
+                <span id="footer-connection-text">Local Caching Only Mode</span>
+            </div>
+        </footer>
     </div>
 
-    <div id="confirm-modal" class="modal-overlay hide">
-        <div class="modal-card">
-            <div class="modal-header">
-                <h3 id="confirm-modal-title">Confirm Database Action</h3>
-                <button class="btn-modal-close modal-dismiss-trigger"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div class="modal-body">
-                <p id="confirm-modal-message" class="modal-info-txt">Are you sure you want to execute this irreversible structural modification operation?</p>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-secondary modal-dismiss-trigger">Cancel</button>
-                <button id="btn-confirm-action" class="btn-danger">Proceed Operation</button>
-            </div>
-        </div>
-    </div>
-
-    <script src="firebase-config.js"></script>
-    <script src="firebase.js"></script>
+    <!-- CENTRAL REGISTRY COMPILATION MODULE LOADING DEPENDENCIES SCRIPTS LINER SHUTTLES -->
     <script src="script.js"></script>
+    <script src="firebase-config.js"></script>
 </body>
 </html>
